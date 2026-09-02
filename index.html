@@ -31,6 +31,9 @@ a:hover{color:var(--accent)}
 .mat{font-size:14px;line-height:1.7}
 .mat .lbl{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);display:block;margin-top:6px}
 .mat .lbl:first-child{margin-top:0}
+.mat ul{margin:2px 0 0;padding-left:16px;list-style:disc}
+.mat li{margin:2px 0 3px}
+.mat .url{color:var(--mute);font-size:11px;font-family:ui-monospace,Menlo,monospace;word-break:break-all}
 .mat .soon{color:var(--mid);font-style:italic}
 .mat a{text-decoration:none;border-bottom:1px dotted var(--accent2)}
 .pill{display:inline-block;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.04em;border:1px solid var(--rule);border-radius:3px;padding:0 6px;color:var(--mute);margin-left:6px;vertical-align:1px}
@@ -75,24 +78,37 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
   <td class="deliv">A shared foundation across the team; working implementations of the core mechanisms (training loop, tokenizer, attention, evaluation harness) written by each engineer.</td>
   <td class="mat">
     <span class="lbl">Book</span>
-    <a href="pdf/ch01_programs.pdf">Ch. 1 — Programs you don't write</a><br>
-    <a href="pdf/ch02_language_modeling.pdf">Ch. 2 — Language modeling</a><br>
-    <a href="pdf/ch03_transformer.pdf">Ch. 3 — The transformer, mechanically</a>
+    <ul>
+      <li><a href="pdf/ch01_programs.pdf">Ch. 1 — Programs you don't write</a></li>
+      <li><a href="pdf/ch02_language_modeling.pdf">Ch. 2 — Language modeling</a></li>
+      <li><a href="pdf/ch03_transformer.pdf">Ch. 3 — The transformer, mechanically</a></li>
+    </ul>
+    <span class="lbl">Papers</span>
+    <ul>
+      <li><a href="https://arxiv.org/pdf/1706.03762">Attention Is All You Need</a> — Vaswani et al., 2017<br><span class="url">arxiv.org/pdf/1706.03762</span></li>
+    </ul>
     <span class="lbl">Interactive</span>
-    <a href="interactive/gradient-descent.html">Gradient descent playground</a><br>
-    <a href="interactive/backprop.html">Forward &amp; backward, step by step</a><br>
-    <a href="interactive/bpe.html">BPE, one merge at a time</a><br>
-    <a href="interactive/param-counter.html">The parameter counter</a><br>
-    <a href="interactive/rope.html">RoPE: positions as rotations</a><br>
-    <a href="interactive/attention.html">The attention zoo (MHA · FlashAttention · GQA · MQA · MLA · SWA)</a>
+    <ul>
+      <li><a href="interactive/gradient-descent.html">Gradient descent playground</a></li>
+      <li><a href="interactive/backprop.html">Forward &amp; backward, step by step</a></li>
+      <li><a href="interactive/bpe.html">BPE, one merge at a time</a></li>
+      <li><a href="interactive/param-counter.html">The parameter counter</a></li>
+      <li><a href="interactive/rope.html">RoPE: positions as rotations</a></li>
+      <li><a href="interactive/attention.html">The attention zoo (MHA · FlashAttention · GQA · MQA · MLA · SWA)</a></li>
+    </ul>
     <span class="lbl">Videos</span>
-    <span class="soon">coming soon</span>
+    <ul>
+      <li><a href="https://learn.deeplearning.ai/courses/finetuning-large-language-models/">Finetuning Large Language Models</a> — DeepLearning.AI course</li>
+      <li><span class="soon">session recordings coming soon</span></li>
+    </ul>
     <span class="lbl">Labs (Colab)</span>
-    <a href="labs/lab_pytorch.ipynb">Lab 0a · PyTorch from zero</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/lab_pytorch.ipynb">open ▸</a><br>
-    <a href="labs/lab_huggingface.ipynb">Lab 0b · Hugging Face, full cycle</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/lab_huggingface.ipynb">open ▸</a><br>
-    <a href="labs/ch01_programs.ipynb">Ch. 1 notebook</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch01_programs.ipynb">open ▸</a><br>
-    <a href="labs/ch02_language_modeling.ipynb">Ch. 2 notebook</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch02_language_modeling.ipynb">open ▸</a><br>
-    <a href="labs/ch03_transformer.ipynb">Ch. 3 notebook</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch03_transformer.ipynb">open ▸</a>
+    <ul>
+      <li><a href="labs/lab_pytorch.ipynb">Lab 0a · PyTorch from zero</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/lab_pytorch.ipynb">open ▸</a></li>
+      <li><a href="labs/lab_huggingface.ipynb">Lab 0b · Hugging Face, full cycle</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/lab_huggingface.ipynb">open ▸</a></li>
+      <li><a href="labs/ch01_programs.ipynb">Ch. 1 notebook</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch01_programs.ipynb">open ▸</a></li>
+      <li><a href="labs/ch02_language_modeling.ipynb">Ch. 2 notebook</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch02_language_modeling.ipynb">open ▸</a></li>
+      <li><a href="labs/ch03_transformer.ipynb">Ch. 3 notebook</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch03_transformer.ipynb">open ▸</a></li>
+    </ul>
   </td>
 </tr>
 <tr>
@@ -102,10 +118,14 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
   <td class="deliv">An operating data pipeline with quality metrics and versioned datasets, ready to feed training.</td>
   <td class="mat">
     <span class="lbl">Book</span>
-    <span class="soon">Ch. 10 — Data · in progress</span><br>
-    <span class="soon">Ch. 25 — Synthetic data · planned</span>
+    <ul>
+      <li><span class="soon">Ch. 10 — Data · in progress</span></li>
+      <li><span class="soon">Ch. 25 — Synthetic data · planned</span></li>
+    </ul>
+    <span class="lbl">Papers</span>
+    <ul><li><span class="soon">coming soon</span></li></ul>
     <span class="lbl">Videos</span>
-    <span class="soon">coming soon</span>
+    <ul><li><span class="soon">coming soon</span></li></ul>
   </td>
 </tr>
 <tr>
@@ -115,13 +135,19 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
   <td class="deliv">An end-to-end, reproducible fine-tuning pipeline, with at least one model adapted to a pilot domain.</td>
   <td class="mat">
     <span class="lbl">Book</span>
-    <span class="soon">Ch. 22 — SFT done cheaply · planned</span><br>
-    <span class="soon">Ch. 16 — Sequence packing · written, being formatted</span>
+    <ul>
+      <li><span class="soon">Ch. 22 — SFT done cheaply · planned</span></li>
+      <li><span class="soon">Ch. 16 — Sequence packing · written, being formatted</span></li>
+    </ul>
     <span class="lbl">Written &amp; live</span>
-    <a href="pdf/ch13_attention.pdf">Ch. 13 — Making attention cheap</a><br>
-    <a href="interactive/attention.html">The attention zoo</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch13_attention.ipynb">Ch. 13 lab ▸</a>
+    <ul>
+      <li><a href="pdf/ch13_attention.pdf">Ch. 13 — Making attention cheap</a></li>
+      <li><a href="interactive/attention.html">The attention zoo</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch13_attention.ipynb">Ch. 13 lab ▸</a></li>
+    </ul>
+    <span class="lbl">Papers</span>
+    <ul><li><span class="soon">coming soon</span></li></ul>
     <span class="lbl">Videos</span>
-    <span class="soon">coming soon</span>
+    <ul><li><span class="soon">coming soon</span></li></ul>
   </td>
 </tr>
 <tr>
@@ -131,9 +157,11 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
   <td class="deliv">A benchmark suite per domain and an automated evaluation pipeline that any model can be run through.</td>
   <td class="mat">
     <span class="lbl">Book</span>
-    <span class="soon">Ch. 9 — How you'll know it's working · planned</span>
+    <ul><li><span class="soon">Ch. 9 — How you'll know it's working · planned</span></li></ul>
+    <span class="lbl">Papers</span>
+    <ul><li><span class="soon">coming soon</span></li></ul>
     <span class="lbl">Videos</span>
-    <span class="soon">coming soon</span>
+    <ul><li><span class="soon">coming soon</span></li></ul>
   </td>
 </tr>
 <tr>
@@ -143,15 +171,17 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
   <td class="deliv">A living model ranking with a dashboard and actionable model-selection guidance, maintained by the team that built it.</td>
   <td class="mat">
     <span class="lbl">Book</span>
-    <span class="soon">Ch. 7 — Scaling laws for training &amp; inference · planned</span>
+    <ul><li><span class="soon">Ch. 7 — Scaling laws for training &amp; inference · planned</span></li></ul>
+    <span class="lbl">Papers</span>
+    <ul><li><span class="soon">coming soon</span></li></ul>
     <span class="lbl">Videos</span>
-    <span class="soon">coming soon</span>
+    <ul><li><span class="soon">coming soon</span></li></ul>
   </td>
 </tr>
 </tbody>
 </table>
 
-<div class="note">Materials on this page grow as the program runs: each phase gains book chapters (HTML and PDF), session videos, and lab notebooks. If a link says <em>coming soon</em>, it is being written or recorded.</div>
+<div class="note">Materials on this page grow as the program runs: each phase gains book chapters, papers, session videos, and lab notebooks. If a link says <em>coming soon</em>, it is being written or recorded.</div>
 
 <h2>The book</h2>
 
