@@ -57,9 +57,8 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
   <div class="sub">A six-month path from engineer to someone who trains large language models — efficiently</div>
 </header>
 
-<p class="lead">Most engineers who want to train language models get stuck in the same place: they can fine-tune a model by following a tutorial, but the space between that and <em>running a real training effort</em> — choosing the data, owning the pipelines, measuring what matters, and not wasting the compute budget — looks like a wall. This program is built to take a working engineer over that wall in six months. It pairs a book written from direct experience pre-training a large model for Latin America with hands-on pipelines you build yourself: data generation and validation, training and fine-tuning, benchmarking, and model selection.</p>
+<p class="lead">Most engineers who want to train language models get stuck in the same place: they can fine-tune a model by following a tutorial, but the space between that and <em>running a real training effort</em> — choosing the data, owning the pipelines, measuring what matters, and not wasting the compute budget — looks like a wall. This program is built to take a working engineer over that wall in six months. This covers: data generation and validation, training and fine-tuning, benchmarking, and model selection.</p>
 
-<p>The premise, which is also the premise of the book: most waste in training is in decisions, not kernels. Efficiency is learned by making the decisions yourself — on real data, with real numbers, against real baselines — with each phase below producing something that works, not just something you studied.</p>
 
 <h2>The program</h2>
 
@@ -183,20 +182,9 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
 
 <div class="note">Materials on this page grow as the program runs: each phase gains book chapters, papers, session videos, and lab notebooks. If a link says <em>coming soon</em>, it is being written or recorded.</div>
 
-<h2>The book</h2>
-
-<p><em>Efficient Training of LLMs</em> is the backbone of the program: a book written in second person, from direct experience pre-training a large open model for Latin America — methods, insights, tricks, and hacks for efficient pre-training, mid-training, and post-training. Every chapter opens with a scenario you have lived, computes its numbers for real, and ends with practical considerations and a decision framework. Chapters are published here as they are finished.</p>
-
-<ul class="chapters">
-  <li><span class="n">Ch. 1</span><span>Programs you don't write — loss, gradients, and the machine that turns data into functions</span><span class="links"><a href="pdf/ch01_programs.pdf">read (pdf)</a> · <a href="interactive/gradient-descent.html">interactive</a> · <a href="interactive/backprop.html">backprop</a></span></li>
-  <li><span class="n">Ch. 2</span><span>Language modeling — tokens, cross-entropy, and the numbers you will stare at for months</span><span class="links"><a href="pdf/ch02_language_modeling.pdf">read (pdf)</a> · <a href="interactive/bpe.html">interactive</a></span></li>
-  <li><span class="n">Ch. 3</span><span>The transformer, mechanically — what each block does, what it costs, and how to count it by hand</span><span class="links"><a href="pdf/ch03_transformer.pdf">read (pdf)</a> · <a href="interactive/param-counter.html">interactive</a> · <a href="interactive/rope.html">rope</a></span></li>
-  <li><span class="n">Ch. 13</span><span>Making attention cheap — FlashAttention, MQA, GQA, MLA, sliding windows, and how to choose</span><span class="links"><a href="pdf/ch13_attention.pdf">read (pdf)</a> · <a href="interactive/attention.html">interactive</a></span></li>
-  <li><span class="n">next</span><span class="soon" style="color:var(--mid);font-style:italic">Ch. 4 — The training loop and the machine it runs on · Ch. 16 — Sequence packing (restructuring)</span></li>
-</ul>
 
 <footer>
-  Omar U. Florez, PhD — written from the experience of pre-training LatamGPT. · <a href="https://github.com/omar-florez/training-efficient-llms">Source on GitHub</a>
+  Omar U. Florez, PhD · <a href="https://github.com/omar-florez/training-efficient-llms">Source on GitHub</a>
 </footer>
 
 </div>
