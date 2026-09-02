@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gradient Descent Playground · Training Efficient LLMs</title>
+<style>
+:root{--ink:#1a1a1a;--mute:#5c5c5c;--mid:#a3a3a3;--rule:#d9d9d9;--soft:#f2f5f9;--bg:#fdfdfb;--accent:#17406b;--accent2:#3f74b8;--hl:#b45309}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-size:17px;line-height:1.6}
+.page{max-width:880px;margin:0 auto;padding:40px 24px 80px}
+.kicker{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}
+h1{font-size:30px;margin:6px 0 4px;color:var(--accent);letter-spacing:-.01em;border-bottom:2px solid var(--accent);padding-bottom:12px}
+p{margin:0 0 14px;max-width:820px}
+.panel{background:#fff;border:1px solid var(--rule);border-radius:6px;padding:18px;margin:20px 0}
+.controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:14px;margin-bottom:8px}
+.controls label{display:flex;align-items:center;gap:8px}
+input[type=range]{width:220px;accent-color:var(--accent2)}
+button{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13.5px;padding:6px 14px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:4px;cursor:pointer}
+button.sec{background:#fff;color:var(--accent)}
+button:hover{opacity:.9}
+.stats{display:flex;gap:26px;flex-wrap:wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;margin-top:10px}
+.stats b{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);display:block}
+.stats .v{color:var(--accent);font-size:16px}
+#msg{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:14px;min-height:22px;margin-top:6px}
+#msg.bad{color:var(--hl);font-weight:600}
+#msg.good{color:var(--accent2)}
+svg{display:block;width:100%;height:auto}
+.svgt{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+footer{margin-top:36px;border-top:1px solid var(--rule);padding-top:12px;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13.5px;color:var(--mute)}
+footer a{color:var(--accent2)}
+.note{font-size:14.5px;color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="kicker">Training Efficient LLMs · Interactive · Chapter 1</div>
+<h1>Gradient Descent Playground</h1>
+
+<p>This is the rent model from Chapter 1 — three apartments, loss <span style="font-style:italic">L(w)</span> = mean squared error, intercept fixed at zero so we can draw the bowl. You control the one hyperparameter that matters: the <b>learning rate</b>. Start with the default and press <b>Run</b>: the ball rolls to the bottom. Then drag the slider to the right and run again — watch the steps overshoot, bounce higher each time, and <em>diverge</em>. You are reproducing the most common training failure in deep learning, safely.</p>
+
+<div class="panel">
+  <div class="controls">
+    <label>learning rate η
+      <input type="range" id="lr" min="-6" max="-3" step="0.02" value="-4.301">
+      <span id="lrv" style="font-family:ui-monospace,Menlo,monospace;color:var(--accent);min-width:80px">5.0e-5</span>
+    </label>
+    <button id="step">Step</button>
+    <button id="run">Run</button>
+    <button class="sec" id="reset">Reset</button>
+  </div>
+  <div class="stats">
+    <div><b>step</b><span class="v" id="s_step">0</span></div>
+    <div><b>w ($/m²)</b><span class="v" id="s_w">0.00</span></div>
+    <div><b>loss</b><span class="v" id="s_loss">7,205,000</span></div>
+    <div><b>gradient</b><span class="v" id="s_g">−473,000</span></div>
+  </div>
+  <div id="msg"></div>
+  <svg id="plot" viewBox="0 0 860 360" aria-label="Loss bowl over w with gradient descent iterates"></svg>
+  <div class="note">Vertical axis is log-scaled loss, so both convergence and explosion stay on screen. The dashed line is the noise floor: the best any straight line can do on this data. Divergence threshold for this problem: η ≈ 1.3×10⁻⁴.</div>
+</div>
+
+<p class="note">Why it diverges: the update is w ← w − η·dL/dw, and on a quadratic bowl the step size that keeps you descending is bounded by the curvature — beyond η = 2/(2·mean(x²)) each step lands <em>farther</em> from the minimum than the last. Chapter 1, Section 1.6 tells this story; Chapter 17 manages this knob over a three-month run.</p>
+
+<footer><a href="../pdf/ch01_programs.pdf">Chapter 1 — Programs you don't write</a> · <a href="../index.html">Training Efficient LLMs</a></footer>
+</div>
+
+<script>
+(function(){
+const X=[50,80,120], Y=[1550,2350,3700];
+const mx2 = X.reduce((a,x)=>a+x*x,0)/3;                    // mean(x^2)
+const wStar = X.reduce((a,x,i)=>a+x*Y[i],0)/X.reduce((a,x)=>a+x*x,0);
+function loss(w){ let s=0; for(let i=0;i<3;i++){const e=w*X[i]-Y[i]; s+=e*e;} return s/3; }
+function grad(w){ let s=0; for(let i=0;i<3;i++){ s+=2*(w*X[i]-Y[i])*X[i];} return s/3; }
+const Lmin=loss(wStar);
+
+// plot mapping
+const W0=-25, W1=85, PX0=70, PX1=840, PY0=30, PY1=300;
+const LLO=Math.log10(Lmin*0.7), LHI=10;                     // log10 loss range
+const xw=w=>PX0+(w-W0)/(W1-W0)*(PX1-PX0);
+const yl=L=>PY1-(Math.min(Math.log10(Math.max(L,1)),LHI)-LLO)/(LHI-LLO)*(PY1-PY0);
+
+const svg=document.getElementById('plot');
+function base(){
+  let s='';
+  s+=`<line x1="${PX0}" y1="${PY1}" x2="${PX1}" y2="${PY1}" stroke="#9dbfe4"/>`;
+  s+=`<line x1="${PX0}" y1="${PY0}" x2="${PX0}" y2="${PY1}" stroke="#9dbfe4"/>`;
+  s+=`<text class="svgt" x="${PX1}" y="${PY1+22}" text-anchor="end" font-size="12" fill="#3f74b8">w  (dollars per m²)</text>`;
+  s+=`<text class="svgt" x="${PX0-8}" y="${PY0+4}" text-anchor="end" font-size="12" fill="#3f74b8">loss</text>`;
+  // curve
+  let pts=[];
+  for(let w=W0;w<=W1;w+=0.7) pts.push(xw(w).toFixed(1)+','+yl(loss(w)).toFixed(1));
+  s+=`<polyline fill="none" stroke="#17406b" stroke-width="2" points="${pts.join(' ')}"/>`;
+  // noise floor
+  s+=`<line x1="${PX0}" y1="${yl(Lmin)}" x2="${PX1}" y2="${yl(Lmin)}" stroke="#b45309" stroke-dasharray="6 4" stroke-width="1.1"/>`;
+  s+=`<text class="svgt" x="${PX1}" y="${yl(Lmin)-6}" text-anchor="end" font-size="11" fill="#b45309">noise floor  L ≈ ${Math.round(Lmin).toLocaleString()}</text>`;
+  s+=`<text class="svgt" x="${xw(wStar)}" y="${PY1+22}" text-anchor="middle" font-size="11" fill="#3f74b8">w* = ${wStar.toFixed(2)}</text>`;
+  s+=`<line x1="${xw(wStar)}" y1="${PY1}" x2="${xw(wStar)}" y2="${PY1+6}" stroke="#3f74b8"/>`;
+  return s;
+}
+let w, k, trail, timer=null, diverged;
+function reset(){ w=0; k=0; trail=[]; diverged=false; stop(); draw(); msg('',''); update(); }
+function msg(t,c){ const m=document.getElementById('msg'); m.textContent=t; m.className=c; }
+function update(){
+  document.getElementById('s_step').textContent=k;
+  document.getElementById('s_w').textContent=isFinite(w)?w.toFixed(2):'∞';
+  const L=loss(w), g=grad(w);
+  document.getElementById('s_loss').textContent=isFinite(L)?(L>=1e7?L.toExponential(2):Math.round(L).toLocaleString()):'∞';
+  document.getElementById('s_g').textContent=isFinite(g)?(Math.abs(g)>=1e6?g.toExponential(2):Math.round(g).toLocaleString()):'∞';
+}
+function lr(){ return Math.pow(10, parseFloat(document.getElementById('lr').value)); }
+function draw(){
+  let s=base();
+  // trail
+  for(let i=1;i<trail.length;i++){
+    const a=trail[i-1], b=trail[i];
+    s+=`<line x1="${xw(a)}" y1="${yl(loss(a))}" x2="${xw(b)}" y2="${yl(loss(b))}" stroke="#b45309" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.85"/>`;
+  }
+  trail.forEach((tw,i)=>{
+    const last=i===trail.length-1;
+    s+=`<circle cx="${xw(tw)}" cy="${yl(loss(tw))}" r="${last?6:3.5}" fill="${last?'#b45309':'#17406b'}" opacity="${last?1:0.75}"/>`;
+  });
+  if(trail.length===0) s+=`<circle cx="${xw(w)}" cy="${yl(loss(w))}" r="6" fill="#b45309"/>`;
+  svg.innerHTML=s;
+}
+function step(){
+  if(diverged) return;
+  const g=grad(w);
+  w=w-lr()*g; k++;
+  const wc=Math.max(W0,Math.min(W1,w));
+  trail.push(wc); if(trail.length>60) trail.shift();
+  if(!isFinite(w)||loss(w)>1e10){
+    diverged=true; stop();
+    msg('Diverged: each step now lands farther from the minimum than the last. This is the loss-goes-to-infinity failure — lower the learning rate and press Reset.','bad');
+  } else if(Math.abs(loss(w)-Lmin)<1){
+    msg('Converged to the noise floor: the best a straight line can do on noisy data. The remaining loss belongs to the data, not the model.','good');
+  } else msg('','');
+  draw(); update();
+}
+function stop(){ if(timer){clearInterval(timer);timer=null;document.getElementById('run').textContent='Run';} }
+document.getElementById('lr').addEventListener('input',()=>{ document.getElementById('lrv').textContent=lr().toExponential(1).replace('e-','e-'); });
+document.getElementById('step').onclick=()=>{trail.length||trail.push(w);step();};
+document.getElementById('run').onclick=function(){
+  if(timer){stop();return;}
+  this.textContent='Pause'; trail.length||trail.push(w);
+  timer=setInterval(step,220);
+};
+document.getElementById('reset').onclick=reset;
+document.getElementById('lrv').textContent='5.0e-5';
+reset();
+})();
+</script>
+</body>
+</html>

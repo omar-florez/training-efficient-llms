@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BPE Stepper · Training Efficient LLMs</title>
+<style>
+:root{--ink:#1a1a1a;--mute:#5c5c5c;--mid:#a3a3a3;--rule:#d9d9d9;--soft:#f2f5f9;--bg:#fdfdfb;--accent:#17406b;--accent2:#3f74b8;--hl:#b45309}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-size:17px;line-height:1.6}
+.page{max-width:880px;margin:0 auto;padding:40px 24px 80px}
+.kicker{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}
+h1{font-size:30px;margin:6px 0 4px;color:var(--accent);letter-spacing:-.01em;border-bottom:2px solid var(--accent);padding-bottom:12px}
+p{margin:0 0 14px;max-width:820px}
+.panel{background:#fff;border:1px solid var(--rule);border-radius:6px;padding:18px;margin:20px 0}
+textarea{width:100%;font-family:Georgia,serif;font-size:15.5px;padding:10px;border:1px solid var(--rule);border-radius:4px;background:var(--bg);resize:vertical}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:14px;margin:12px 0 4px}
+button{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13.5px;padding:6px 14px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:4px;cursor:pointer}
+button.sec{background:#fff;color:var(--accent)}
+button:disabled{opacity:.4;cursor:default}
+.stats{display:flex;gap:26px;flex-wrap:wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;margin:10px 0 4px}
+.stats b{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);display:block}
+.stats .v{color:var(--accent);font-size:16px}
+#last{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:14px;min-height:22px;color:var(--hl)}
+.seg{line-height:2.5;margin-top:8px}
+.word{display:inline-block;margin:0 14px 6px 0;white-space:nowrap}
+.tk{display:inline-block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;padding:2px 7px;border-radius:3px;margin-right:2px;border:1px solid var(--accent)}
+.tk.single{background:#dbe7f6;color:var(--ink)}
+.tk.multi{background:#3f74b8;color:#fff;border-color:#3f74b8}
+.tk.word1{background:#17406b;color:#fff;border-color:#17406b}
+.tk.hot{outline:3px solid var(--hl);outline-offset:1px}
+.wl{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11px;color:var(--mute);display:block;margin-bottom:-6px}
+.merges{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;columns:2;column-gap:36px;margin-top:6px}
+.merges div{padding:2px 0;color:var(--accent)}
+.merges div span{color:var(--mute)}
+h3{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);margin:18px 0 4px}
+footer{margin-top:36px;border-top:1px solid var(--rule);padding-top:12px;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13.5px;color:var(--mute)}
+footer a{color:var(--accent2)}
+.note{font-size:14.5px;color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="kicker">Training Efficient LLMs · Interactive · Chapter 2</div>
+<h1>Byte-Pair Encoding, one merge at a time</h1>
+
+<p>This is the exact algorithm from Chapter 2, running on the exact corpus from Figure 2.1 — or on any text you paste below. Each press of <b>Merge</b> finds the most frequent adjacent pair, fuses it into a new token everywhere, and grows the vocabulary by one. Watch <em>-er</em>, <em>the</em>, and <em>fast</em> crystallize out of raw characters, and watch the token count fall: that falling number is compression, and compression is compute saved.</p>
+
+<div class="panel">
+  <textarea id="corpus" rows="2">the faster runner ran past the fastest swimmer the swimmer swam faster</textarea>
+  <div class="controls">
+    <button id="train" class="sec">Load corpus</button>
+    <button id="merge">Merge next pair</button>
+    <button id="merge10">×10</button>
+    <button id="reset" class="sec">Reset</button>
+  </div>
+  <div class="stats">
+    <div><b>merges done</b><span class="v" id="s_m">0</span></div>
+    <div><b>vocab size</b><span class="v" id="s_v">–</span></div>
+    <div><b>tokens in corpus</b><span class="v" id="s_t">–</span></div>
+    <div><b>compression</b><span class="v" id="s_c">1.00×</span></div>
+  </div>
+  <div id="last"></div>
+  <h3>How the corpus segments now</h3>
+  <div class="seg" id="seg"></div>
+  <h3>Merge history (learned vocabulary entries)</h3>
+  <div class="merges" id="hist"><div style="color:var(--mute)">none yet — press Merge</div></div>
+  <div class="note" style="margin-top:12px">Chips: <span class="tk single">a</span> single character · <span class="tk multi">er</span> learned subword · <span class="tk word1">the</span> a whole word became one token. End-of-word markers are tracked internally and hidden here. Production tokenizers run these exact rules on terabytes, for 32,000–128,000 merges.</div>
+</div>
+
+<footer><a href="../pdf/ch02_language_modeling.pdf">Chapter 2 — Language modeling</a> · <a href="../index.html">Training Efficient LLMs</a></footer>
+</div>
+
+<script>
+(function(){
+const EOW='\u0001';           // internal end-of-word marker
+let words, counts, vocab, merges, hot=null;
+
+function load(){
+  const txt=document.getElementById('corpus').value.toLowerCase().replace(/[^a-z0-9áéíóúñü\s]/g,' ');
+  counts={};
+  txt.split(/\s+/).filter(Boolean).forEach(w=>counts[w]=(counts[w]||0)+1);
+  words=Object.keys(counts);
+  vocab={}; words.forEach(w=>vocab[w]=w.split('').concat([EOW]));
+  merges=[]; hot=null; render('Loaded '+words.length+' distinct words. Press Merge.');
+}
+function pairCounts(){
+  const c={};
+  for(const w of words){ const s=vocab[w];
+    for(let i=0;i<s.length-1;i++){ const k=s[i]+'\u0002'+s[i+1]; c[k]=(c[k]||0)+counts[w]; } }
+  return c;
+}
+function mergeOnce(){
+  const c=pairCounts(); let best=null,bn=0;
+  for(const k in c){ if(c[k]>bn || (c[k]===bn && best && k<best)){best=k;bn=c[k];} }
+  if(!best||bn<2){ render('No pair occurs more than once — nothing useful left to merge on this corpus.'); return; }
+  const [a,b]=best.split('\u0002'), nu=a+b;
+  for(const w of words){ const s=vocab[w],out=[]; let i=0;
+    while(i<s.length){ if(i<s.length-1&&s[i]===a&&s[i+1]===b){out.push(nu);i+=2;} else {out.push(s[i]);i++;} }
+    vocab[w]=out; }
+  merges.push([nu,bn]); hot=nu;
+  render('Merged  "'+disp(a)+'" + "'+disp(b)+'"  →  "'+disp(nu)+'"   (seen ×'+bn+')');
+}
+function disp(t){ const s=t.split(EOW).join(''); return s===''?'· (end of word)':s+(t.endsWith(EOW)?' ·':''); }
+function isWordEnd(t){ return t.endsWith(EOW); }
+function baseChars(){ const s=new Set(); words.forEach(w=>w.split('').forEach(ch=>s.add(ch))); return s.size+1; }
+function render(message){
+  // stats
+  let tok=0, chars=0;
+  for(const w of words){ tok+=vocab[w].length*counts[w]; chars+=(w.length+1)*counts[w]; }
+  document.getElementById('s_m').textContent=merges.length;
+  document.getElementById('s_v').textContent=(baseChars()+merges.length).toLocaleString();
+  document.getElementById('s_t').textContent=tok.toLocaleString();
+  document.getElementById('s_c').textContent=(chars/tok).toFixed(2)+'×';
+  document.getElementById('last').textContent=message||'';
+  // segmentation (unique words, frequent first)
+  const seg=document.getElementById('seg'); seg.innerHTML='';
+  words.slice().sort((x,y)=>counts[y]-counts[x]).forEach(w=>{
+    const d=document.createElement('span'); d.className='word';
+    const lbl=document.createElement('span'); lbl.className='wl'; lbl.textContent=w+' ×'+counts[w]; d.appendChild(lbl);
+    const row=document.createElement('span');
+    vocab[w].forEach(t=>{
+      const txt=t.replace(new RegExp(EOW,'g'),'');
+      if(txt==='') return;                       // bare EOW token: skip visually
+      const c=document.createElement('span');
+      const whole=isWordEnd(t)&&txt===w;
+      c.className='tk '+(whole?'word1':(txt.length>1?'multi':'single'))+(t===hot?' hot':'');
+      c.textContent=txt; row.appendChild(c);
+    });
+    d.appendChild(row); seg.appendChild(d);
+  });
+  // history
+  const h=document.getElementById('hist');
+  h.innerHTML=merges.length?merges.map((m,i)=>'<div>'+(i+1)+'. '+disp(m[0])+' <span>×'+m[1]+'</span></div>').join('')
+    :'<div style="color:var(--mute)">none yet — press Merge</div>';
+}
+document.getElementById('merge').onclick=mergeOnce;
+document.getElementById('merge10').onclick=()=>{for(let i=0;i<10;i++)mergeOnce();};
+document.getElementById('train').onclick=load;
+document.getElementById('reset').onclick=load;
+load();
+})();
+</script>
+</body>
+</html>

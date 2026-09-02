@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Parameter Counter · Training Efficient LLMs</title>
+<style>
+:root{--ink:#1a1a1a;--mute:#5c5c5c;--mid:#a3a3a3;--rule:#d9d9d9;--soft:#f2f5f9;--bg:#fdfdfb;--accent:#17406b;--accent2:#3f74b8;--hl:#b45309}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-size:17px;line-height:1.6}
+.page{max-width:920px;margin:0 auto;padding:40px 24px 80px}
+.kicker{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}
+h1{font-size:30px;margin:6px 0 4px;color:var(--accent);letter-spacing:-.01em;border-bottom:2px solid var(--accent);padding-bottom:12px}
+p{margin:0 0 14px;max-width:840px}
+.grid{display:grid;grid-template-columns:330px 1fr;gap:22px;margin:20px 0}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.panel{background:#fff;border:1px solid var(--rule);border-radius:6px;padding:18px}
+h3{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);margin:0 0 10px}
+.f{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 0;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:14px}
+.f input,.f select{width:130px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13.5px;padding:4px 8px;border:1px solid var(--rule);border-radius:4px;background:var(--bg);text-align:right}
+.f input[type=checkbox]{width:auto}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.presets button{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12.5px;padding:5px 10px;border:1px solid var(--accent2);background:#fff;color:var(--accent);border-radius:4px;cursor:pointer}
+.presets button:hover{background:var(--soft)}
+.big{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:16px}
+.card{background:var(--soft);border-left:3px solid var(--accent2);padding:10px 14px}
+.card b{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);display:block}
+.card .v{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:21px;color:var(--accent)}
+.card .u{font-size:13px;color:var(--mute)}
+.bar{display:flex;height:30px;border:1px solid var(--accent);border-radius:3px;overflow:hidden;margin:6px 0 4px}
+.bar div{display:flex;align-items:center;justify-content:center;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;white-space:nowrap;overflow:hidden}
+.legend{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12.5px;color:var(--mute);margin-bottom:14px}
+.formula{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:var(--mute);background:var(--soft);padding:10px 14px;border-radius:4px;line-height:1.8}
+.formula b{color:var(--accent)}
+footer{margin-top:36px;border-top:1px solid var(--rule);padding-top:12px;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13.5px;color:var(--mute)}
+footer a{color:var(--accent2)}
+.note{font-size:14.5px;color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="kicker">Training Efficient LLMs · Interactive · Chapter 3</div>
+<h1>The Parameter Counter</h1>
+
+<p>Chapter 3's promise, as a tool: give it the five integers of a <code style="font-family:ui-monospace,Menlo,monospace;font-size:14px">config.json</code> and it gives you the four facts — parameters, disk size, training FLOPs per token, and KV-cache memory. Load a preset and check it against the released checkpoint, or design your own model and watch where the parameters go.</p>
+
+<div class="presets">
+  <button data-p="gpt2">GPT-2 small (2019)</button>
+  <button data-p="l27">Llama 2 7B</button>
+  <button data-p="l38">Llama 3 8B</button>
+  <button data-p="l370">Llama 3 70B</button>
+</div>
+
+<div class="grid">
+  <div class="panel">
+    <h3>The config</h3>
+    <div class="f"><label>hidden_size&nbsp;&nbsp;d</label><input id="d" type="number" value="4096" step="128"></div>
+    <div class="f"><label>num_hidden_layers&nbsp;&nbsp;N</label><input id="N" type="number" value="32"></div>
+    <div class="f"><label>intermediate_size&nbsp;&nbsp;d_ff</label><input id="dff" type="number" value="11008" step="256"></div>
+    <div class="f"><label>vocab_size&nbsp;&nbsp;V</label><input id="V" type="number" value="32000" step="256"></div>
+    <div class="f"><label>attention heads&nbsp;&nbsp;h</label><input id="h" type="number" value="32"></div>
+    <div class="f"><label>KV heads (GQA)&nbsp;&nbsp;h_kv</label><input id="hkv" type="number" value="32"></div>
+    <div class="f"><label>MLP style</label><select id="mlp"><option value="3">SwiGLU (3 matrices)</option><option value="2">GELU/ReLU (2 matrices)</option></select></div>
+    <div class="f"><label>tie_word_embeddings</label><input id="tie" type="checkbox"></div>
+    <div class="f"><label>context length&nbsp;&nbsp;L</label><input id="L" type="number" value="4096" step="1024"></div>
+    <div class="f"><label>precision</label><select id="bytes"><option value="2">BF16 (2 bytes)</option><option value="4">FP32 (4 bytes)</option><option value="1">FP8/INT8 (1 byte)</option></select></div>
+  </div>
+
+  <div class="panel">
+    <h3>The four facts</h3>
+    <div class="big">
+      <div class="card"><b>Parameters</b><span class="v" id="o_p">–</span><span class="u" id="o_pe"></span></div>
+      <div class="card"><b>Checkpoint on disk</b><span class="v" id="o_gb">–</span></div>
+      <div class="card"><b>Training FLOPs / token (≈6P)</b><span class="v" id="o_fl">–</span></div>
+      <div class="card"><b>KV cache / token</b><span class="v" id="o_kv">–</span></div>
+    </div>
+    <h3>Where the parameters are</h3>
+    <div class="bar" id="bar"></div>
+    <div class="legend" id="legend"></div>
+    <h3>KV cache at full context</h3>
+    <div class="f" style="font-size:14.5px"><span>One sequence of <span id="o_L">4,096</span> tokens</span><span style="font-family:ui-monospace,Menlo,monospace;color:var(--accent)" id="o_kvseq">–</span></div>
+    <div class="f" style="font-size:14.5px"><span>Batch of 32 sequences</span><span style="font-family:ui-monospace,Menlo,monospace;color:var(--accent)" id="o_kvb">–</span></div>
+    <div class="note" id="o_kvnote"></div>
+    <h3 style="margin-top:14px">The arithmetic</h3>
+    <div class="formula" id="formula"></div>
+  </div>
+</div>
+
+<p class="note">RMSNorm vectors and biases are ignored (they are &lt;0.01% of a 7B model — Chapter 3.6 accounts for every one of them on Llama 2 7B: the counter's 6.738B vs the checkpoint's 6.7384B). FLOPs per token uses the 6P rule derived in Chapter 8: 2P forward, 4P backward.</p>
+
+<footer><a href="../pdf/ch03_transformer.pdf">Chapter 3 — The transformer, mechanically</a> · <a href="../index.html">Training Efficient LLMs</a></footer>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const P={
+  gpt2:{d:768,N:12,dff:3072,V:50257,h:12,hkv:12,mlp:'2',tie:true,L:1024},
+  l27:{d:4096,N:32,dff:11008,V:32000,h:32,hkv:32,mlp:'3',tie:false,L:4096},
+  l38:{d:4096,N:32,dff:14336,V:128256,h:32,hkv:8,mlp:'3',tie:false,L:8192},
+  l370:{d:8192,N:80,dff:28672,V:128256,h:64,hkv:8,mlp:'3',tie:false,L:8192},
+};
+function fmt(n){
+  if(n>=1e12) return (n/1e12).toFixed(2)+' T';
+  if(n>=1e9)  return (n/1e9).toFixed(2)+' B';
+  if(n>=1e6)  return (n/1e6).toFixed(1)+' M';
+  return Math.round(n).toLocaleString();
+}
+function gb(bytes){ return bytes>=1e9 ? (bytes/1e9).toFixed(1)+' GB' : (bytes/1e6).toFixed(0)+' MB'; }
+function calc(){
+  const d=+$('d').value, N=+$('N').value, dff=+$('dff').value, V=+$('V').value;
+  const h=+$('h').value, hkv=Math.min(+$('hkv').value,h), mlpK=+$('mlp').value;
+  const tie=$('tie').checked, L=+$('L').value, B=+$('bytes').value;
+  if(!(d&&N&&dff&&V&&h&&hkv)) return;
+  const dh=Math.floor(d/h);
+  const attn=2*d*d + 2*d*(hkv*dh);          // W_Q + W_O, W_K + W_V
+  const mlp=mlpK*d*dff;
+  const emb=V*d*(tie?1:2);
+  const layer=attn+mlp, total=N*layer+emb;
+  $('o_p').textContent=fmt(total);
+  $('o_pe').textContent='= '+total.toLocaleString();
+  $('o_gb').textContent=gb(total*B);
+  $('o_fl').textContent=fmt(6*total).replace(' T',' TFLOP').replace(' B',' GFLOP').replace(' M',' MFLOP');
+  const kvTok=2*N*hkv*dh*B;
+  $('o_kv').textContent=kvTok>=1e6?(kvTok/1e6).toFixed(1)+' MB':(kvTok/1024).toFixed(0)+' KB';
+  $('o_L').textContent=L.toLocaleString();
+  $('o_kvseq').textContent=gb(kvTok*L);
+  $('o_kvb').textContent=gb(kvTok*L*32);
+  const w=total*B, kvb=kvTok*L*32;
+  $('o_kvnote').textContent= kvb>w
+    ? 'At batch 32 the cache ('+gb(kvb)+') exceeds the weights ('+gb(w)+') — serving is a memory problem. GQA with fewer KV heads shrinks exactly this number.'
+    : 'At batch 32 the cache stays below the weights — the GQA ratio of '+h+':'+hkv+' is doing its job.';
+  // bar
+  const aP=N*attn, mP=N*mlp;
+  const segs=[['embedding',emb,'#9dbfe4','#17406b'],['attention',aP,'#3f74b8','#fff'],['MLP',mP,'#17406b','#fff']];
+  $('bar').innerHTML=segs.map(s=>{
+    const pc=100*s[1]/total;
+    return '<div style="width:'+pc+'%;background:'+s[2]+';color:'+s[3]+'">'+(pc>9?s[0]+' '+pc.toFixed(0)+'%':'')+'</div>';
+  }).join('');
+  $('legend').textContent=segs.map(s=>s[0]+' '+fmt(s[1])+' ('+(100*s[1]/total).toFixed(1)+'%)').join(' · ');
+  // formulas
+  $('formula').innerHTML=
+    '<b>attention</b>/layer = 2·d² + 2·d·(h_kv·d_head) = '+fmt(attn)+'<br>'+
+    '<b>MLP</b>/layer = '+mlpK+'·d·d_ff = '+fmt(mlp)+'<br>'+
+    '<b>embedding'+(tie?' (tied)':' + LM head')+'</b> = '+(tie?'':'2·')+'V·d = '+fmt(emb)+'<br>'+
+    '<b>total</b> = N·(attn+mlp) + emb = '+N+' × '+fmt(layer)+' + '+fmt(emb)+' = <b>'+fmt(total)+'</b><br>'+
+    '<b>KV cache</b>/token = 2·N·h_kv·d_head·bytes = 2·'+N+'·'+hkv+'·'+dh+'·'+B+' = '+(kvTok/1024).toFixed(0)+' KB';
+}
+document.querySelectorAll('.presets button').forEach(b=>b.onclick=()=>{
+  const p=P[b.dataset.p];
+  $('d').value=p.d;$('N').value=p.N;$('dff').value=p.dff;$('V').value=p.V;
+  $('h').value=p.h;$('hkv').value=p.hkv;$('mlp').value=p.mlp;$('tie').checked=p.tie;$('L').value=p.L;
+  calc();
+});
+document.querySelectorAll('input,select').forEach(el=>el.addEventListener('input',calc));
+calc();
+})();
+</script>
+</body>
+</html>

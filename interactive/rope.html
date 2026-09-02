@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RoPE: Positions as Rotations · Training Efficient LLMs</title>
+<style>
+:root{--ink:#1a1a1a;--mute:#5c5c5c;--mid:#a3a3a3;--rule:#d9d9d9;--soft:#f2f5f9;--bg:#fdfdfb;--accent:#17406b;--accent2:#3f74b8;--hl:#b45309}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-size:17px;line-height:1.6}
+.page{max-width:920px;margin:0 auto;padding:40px 24px 80px}
+.kicker{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}
+h1{font-size:30px;margin:6px 0 4px;color:var(--accent);letter-spacing:-.01em;border-bottom:2px solid var(--accent);padding-bottom:12px}
+p{margin:0 0 14px;max-width:840px}
+.panel{background:#fff;border:1px solid var(--rule);border-radius:6px;padding:18px;margin:20px 0}
+.controls{display:flex;flex-wrap:wrap;gap:12px 26px;align-items:center;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:14px;margin-bottom:6px}
+.controls label{display:flex;align-items:center;gap:8px}
+input[type=range]{width:170px;accent-color:var(--accent2)}
+button{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13.5px;padding:6px 14px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:4px;cursor:pointer}
+button.sec{background:#fff;color:var(--accent)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.stats{display:flex;gap:24px;flex-wrap:wrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13.5px;margin:8px 0 2px}
+.stats b{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);display:block}
+.stats .v{color:var(--accent);font-size:16px}
+.stats .v.hl{color:var(--hl)}
+#verdict{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:14.5px;min-height:24px;margin-top:6px;color:var(--accent2)}
+#verdict.locked{color:var(--hl);font-weight:600}
+svg{display:block;max-width:100%;height:auto;margin:0 auto}
+.svgt{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+h3{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);margin:20px 0 6px}
+footer{margin-top:36px;border-top:1px solid var(--rule);padding-top:12px;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13.5px;color:var(--mute)}
+footer a{color:var(--accent2)}
+.note{font-size:14.5px;color:var(--mute)}
+.tog{display:inline-flex;border:1px solid var(--accent2);border-radius:4px;overflow:hidden}
+.tog button{border:0;border-radius:0;background:#fff;color:var(--accent);padding:5px 12px;font-size:12.5px}
+.tog button.on{background:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="kicker">Training Efficient LLMs · Interactive · Chapters 3 &amp; 12</div>
+<h1>RoPE: positions as rotations</h1>
+
+<p>RoPE tells the model where a token is by <em>rotating</em> its query and key vectors — position 17 means "rotate by 17 × θ". The remarkable consequence: the attention score between a query at position <span class="mono">m</span> and a key at position <span class="mono">n</span> depends only on the distance <span class="mono">m − n</span>, never on where the pair sits. See it yourself: press <b>Slide both</b> and watch the two vectors spin together like a rigid body while the score does not move. Then drag just one slider and watch the score change — because now the <em>distance</em> changed.</p>
+
+<div class="panel">
+  <div class="controls">
+    <label>query position m <input type="range" id="m" min="0" max="120" value="17"><span class="mono" id="mv" style="color:var(--accent);min-width:28px">17</span></label>
+    <label>key position n <input type="range" id="n" min="0" max="120" value="5"><span class="mono" id="nv" style="color:var(--accent);min-width:28px">5</span></label>
+    <button id="play">Slide both ▶</button>
+    <button class="sec" id="reset">Reset</button>
+  </div>
+  <div class="stats">
+    <div><b>distance m − n</b><span class="v hl" id="s_d">12</span></div>
+    <div><b>q rotation</b><span class="v" id="s_qa">–</span></div>
+    <div><b>k rotation</b><span class="v" id="s_ka">–</span></div>
+    <div><b>attention score q·k</b><span class="v hl" id="s_dot">–</span></div>
+  </div>
+  <div id="verdict"></div>
+  <svg id="circle" viewBox="0 0 880 380" aria-label="Query and key vectors on a circle, rotated by their positions; the angle between them depends only on the distance"></svg>
+  <div class="note">One dimension pair of one head is shown (rotation rate θ = 0.1 rad per position — a middle rung of the frequency ladder below). The base directions of q and k are what the projections W<sub>Q</sub>, W<sub>K</sub> produced; RoPE adds the position spin on top. Score = |q||k|·cos(angle between them).</div>
+</div>
+
+<h3>The frequency ladder: every dimension pair is a clock hand</h3>
+<p>A head does not use one rotation speed — dimension pair <span class="mono">i</span> rotates at <span class="mono">θᵢ = base<sup>−2i/d</sup></span> radians per position. Fast pairs distinguish neighboring tokens; slow pairs distinguish distant regions, like the hands of a clock. Drag <b>position</b> and watch; then switch the base from Llama 2's 10,000 to Llama 3's 500,000 and notice the slow hands slow down further — that is literally the whole context-extension trick of Chapter 21: stretch the slow clocks so positions stay distinguishable over a longer horizon.</p>
+
+<div class="panel">
+  <div class="controls">
+    <label>position <input type="range" id="pos" min="0" max="500" value="40"><span class="mono" id="posv" style="color:var(--accent);min-width:36px">40</span></label>
+    <span class="tog"><button id="b10k" class="on">base 10,000</button><button id="b500k">base 500,000</button></span>
+    <button id="spin" class="sec">Animate ▶</button>
+  </div>
+  <svg id="clocks" viewBox="0 0 880 170" aria-label="Eight dimension pairs drawn as clocks rotating at geometrically spaced speeds"></svg>
+  <div class="note">Eight of a head's 64 dimension pairs (d<sub>head</sub> = 128). The leftmost hand turns a full radian per token; the rightmost barely moves across the whole context. Together they give every position a unique multi-speed reading, and every <em>offset</em> a unique pattern of angle differences.</div>
+</div>
+
+<p class="note">Why this design won: the rotation adds no parameters, applies in every layer (position information never has to survive the residual stream), and makes attention natively <em>relative</em> — "the token 3 to my left" is the same geometric relationship at position 10 or position 10,000. Chapter 3.4 introduces it; Chapter 12 weighs its variants; Chapter 13 shows where it collides with latent attention; Chapter 21 stretches it.</p>
+
+<footer><a href="../pdf/ch03_transformer.pdf">Chapter 3 — The transformer, mechanically</a> · <a href="../index.html">Training Efficient LLMs</a></footer>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const TH=0.1;                      // rad per position for the main circle
+const A0=0.45, B0=1.15;            // base angles of q and k (from W_Q, W_K)
+const QM=1.0, KM=0.88;             // magnitudes
+const CX=250, CY=195, R=150;
+let playing=null, spinning=null, base=10000;
+
+function pt(ang,r){ return [CX+r*Math.cos(-ang), CY+r*Math.sin(-ang)]; }
+function arrow(ang,r,color,w,label,dash){
+  const [x,y]=pt(ang,r);
+  const [lx,ly]=pt(ang,r+22);
+  return `<line x1="${CX}" y1="${CY}" x2="${x}" y2="${y}" stroke="${color}" stroke-width="${w}" ${dash?'stroke-dasharray="5 4" opacity="0.45"':''} marker-end="url(#a${color.slice(1)})"/>`+
+         (label?`<text class="svgt" x="${lx}" y="${ly+4}" text-anchor="middle" font-size="13" font-weight="600" fill="${color}">${label}</text>`:'');
+}
+function drawCircle(){
+  const m=+$('m').value, n=+$('n').value;
+  $('mv').textContent=m; $('nv').textContent=n;
+  const qa=A0+TH*m, ka=B0+TH*n;
+  const rel=qa-ka, dot=QM*KM*Math.cos(rel);
+  $('s_d').textContent=m-n;
+  $('s_qa').textContent=(TH*m).toFixed(2)+' rad';
+  $('s_ka').textContent=(TH*n).toFixed(2)+' rad';
+  $('s_dot').textContent=dot.toFixed(3);
+  $('verdict').textContent = playing
+    ? 'Both positions sliding — the pair rotates rigidly, the score is frozen at '+dot.toFixed(3)+'. Attention sees only the distance.'
+    : 'Move one slider: the distance changes and the score follows. Move both together (▶): the score is invariant.';
+  $('verdict').className = playing ? 'locked' : '';
+  let s=`<defs>
+    <marker id="a17406b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#17406b"/></marker>
+    <marker id="ab45309" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#b45309"/></marker>
+  </defs>`;
+  s+=`<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="#dbe7f6" stroke-width="1.5"/>`;
+  s+=`<circle cx="${CX}" cy="${CY}" r="2.5" fill="#17406b"/>`;
+  // base (unrotated) directions, ghosted
+  s+=arrow(A0,R*QM,'#b45309',1.5,null,true)+arrow(B0,R*KM,'#17406b',1.5,null,true);
+  s+=`<text class="svgt" x="${CX-R-8}" y="${CY+R+14}" font-size="11" fill="#5c5c5c">faint arrows = the vectors before rotation (position 0)</text>`;
+  // relative angle arc
+  const a1=Math.min(qa,ka), a2=Math.max(qa,ka);
+  const [sx,sy]=pt(a1,58), [ex,ey]=pt(a2,58);
+  const large=(a2-a1)%(2*Math.PI)>Math.PI?1:0;
+  s+=`<path d="M ${sx},${sy} A 58 58 0 ${large} 0 ${ex},${ey}" fill="none" stroke="#3f74b8" stroke-width="2"/>`;
+  const [tx,ty]=pt((a1+a2)/2,80);
+  s+=`<text class="svgt" x="${tx}" y="${ty+4}" text-anchor="middle" font-size="12" fill="#3f74b8">Δ = ${(qa-ka).toFixed(2)} rad</text>`;
+  // rotated vectors
+  s+=arrow(qa,R*QM,'#b45309',3,'q · pos '+m)+arrow(ka,R*KM,'#17406b',3,'k · pos '+n);
+  // right side: score bar
+  const bx=560,by=90,bw=260,bh=26;
+  s+=`<text class="svgt" x="${bx}" y="${by-12}" font-size="12" fill="#5c5c5c" letter-spacing=".08em">ATTENTION SCORE  q·k</text>`;
+  s+=`<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" fill="none" stroke="#9dbfe4"/>`;
+  const half=bw/2, val=dot/(QM*KM);
+  s+=`<line x1="${bx+half}" y1="${by-4}" x2="${bx+half}" y2="${by+bh+4}" stroke="#9dbfe4"/>`;
+  s+=`<rect x="${val>=0?bx+half:bx+half+val*half}" y="${by}" width="${Math.abs(val)*half}" height="${bh}" fill="${val>=0?'#17406b':'#b45309'}"/>`;
+  s+=`<text class="svgt" x="${bx}" y="${by+bh+18}" font-size="11" fill="#5c5c5c">−|q||k|</text><text class="svgt" x="${bx+bw}" y="${by+bh+18}" text-anchor="end" font-size="11" fill="#5c5c5c">+|q||k|</text>`;
+  s+=`<text class="svgt" x="${bx+bw/2}" y="${by+bh+18}" text-anchor="middle" font-size="11" fill="#5c5c5c">0</text>`;
+  s+=`<text class="svgt" x="${bx}" y="${by+70}" font-size="13" fill="#1a1a1a">score = |q||k| · cos( (α+θm) − (β+θn) )</text>`;
+  s+=`<text class="svgt" x="${bx+56}" y="${by+92}" font-size="13" fill="#b45309">= |q||k| · cos( α−β + θ·(m−n) )</text>`;
+  s+=`<text class="svgt" x="${bx}" y="${by+122}" font-size="12" fill="#5c5c5c">m and n appear only as their difference:</text>`;
+  s+=`<text class="svgt" x="${bx}" y="${by+140}" font-size="12" fill="#5c5c5c">absolute position cancels out.</text>`;
+  $('circle').innerHTML=s;
+}
+function drawClocks(){
+  const pos=+$('pos').value; $('posv').textContent=pos;
+  const d=128; let s='';
+  for(let j=0;j<8;j++){
+    const i=j*9;                                  // pairs 0,9,18,...,63
+    const w=Math.pow(base,-2*i/d);
+    const cx=62+j*108, cy=78, r=44;
+    const ang=w*pos;
+    const [hx,hy]=[cx+r*0.86*Math.cos(-ang), cy+r*0.86*Math.sin(-ang)];
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff" stroke="#9dbfe4"/>`;
+    s+=`<line x1="${cx}" y1="${cy}" x2="${hx}" y2="${hy}" stroke="${j<3?'#b45309':'#17406b'}" stroke-width="2.5"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="2" fill="#17406b"/>`;
+    s+=`<text class="svgt" x="${cx}" y="${cy+r+18}" text-anchor="middle" font-size="11" fill="#5c5c5c">pair ${i}</text>`;
+    s+=`<text class="svgt" x="${cx}" y="${cy+r+32}" text-anchor="middle" font-size="10" fill="#9dbfe4">θ=${w>=0.001?w.toFixed(3):w.toExponential(1)}</text>`;
+  }
+  $('clocks').innerHTML=s;
+}
+$('m').addEventListener('input',drawCircle);
+$('n').addEventListener('input',drawCircle);
+$('pos').addEventListener('input',drawClocks);
+$('reset').onclick=()=>{ stopPlay(); $('m').value=17; $('n').value=5; drawCircle(); };
+function stopPlay(){ if(playing){clearInterval(playing);playing=null;$('play').textContent='Slide both ▶';drawCircle();} }
+$('play').onclick=()=>{
+  if(playing){ stopPlay(); return; }
+  $('play').textContent='Pause ⏸';
+  playing=setInterval(()=>{
+    let m=+$('m').value, n=+$('n').value;
+    if(m>=120||n>=120){ const d=m-n; n=Math.max(0,Math.min(5,120-d)); m=n+d; }
+    else { m++; n++; }
+    $('m').value=m; $('n').value=n; drawCircle();
+  },120);
+};
+$('spin').onclick=function(){
+  if(spinning){ clearInterval(spinning); spinning=null; this.textContent='Animate ▶'; return; }
+  this.textContent='Pause ⏸';
+  spinning=setInterval(()=>{ let p=+$('pos').value+2; if(p>500)p=0; $('pos').value=p; drawClocks(); },80);
+};
+$('b10k').onclick=()=>{ base=10000; $('b10k').classList.add('on'); $('b500k').classList.remove('on'); drawClocks(); };
+$('b500k').onclick=()=>{ base=500000; $('b500k').classList.add('on'); $('b10k').classList.remove('on'); drawClocks(); };
+drawCircle(); drawClocks();
+})();
+</script>
+</body>
+</html>

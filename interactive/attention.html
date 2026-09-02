@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Attention Zoo · Training Efficient LLMs</title>
+<style>
+:root{--ink:#1a1a1a;--mute:#5c5c5c;--mid:#a3a3a3;--rule:#d9d9d9;--soft:#f2f5f9;--bg:#fdfdfb;--accent:#17406b;--accent2:#3f74b8;--hl:#b45309}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-size:17px;line-height:1.6}
+.page{max-width:940px;margin:0 auto;padding:40px 24px 80px}
+.kicker{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}
+h1{font-size:30px;margin:6px 0 4px;color:var(--accent);letter-spacing:-.01em;border-bottom:2px solid var(--accent);padding-bottom:12px}
+p{margin:0 0 14px;max-width:860px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:18px 0 0}
+.tabs button{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13.5px;padding:8px 16px;border:1px solid var(--accent2);background:#fff;color:var(--accent);border-radius:5px 5px 0 0;cursor:pointer;border-bottom:0}
+.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.panel{background:#fff;border:1px solid var(--rule);border-radius:0 6px 6px 6px;padding:18px;margin:0 0 20px}
+#desc{font-size:15.5px;min-height:48px;margin-bottom:6px}
+#desc b{color:var(--accent)}
+#desc .models{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.04em;color:var(--accent2)}
+.controls{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:14px;margin:8px 0}
+button.ctl{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13.5px;padding:6px 14px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:4px;cursor:pointer}
+button.ctl.sec{background:#fff;color:var(--accent)}
+select{font-family:ui-monospace,Menlo,monospace;font-size:13px;padding:3px 6px;border:1px solid var(--rule);border-radius:4px;background:var(--bg)}
+input[type=range]{width:130px;accent-color:var(--accent2)}
+.stats{display:flex;gap:24px;flex-wrap:wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;margin:8px 0 2px}
+.stats b{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);display:block}
+.stats .v{color:var(--accent);font-size:16px}
+.stats .v.hl{color:var(--hl)}
+.cbar{height:22px;border:1px solid var(--accent);border-radius:3px;overflow:hidden;background:#fff;max-width:520px;margin:6px 0 2px}
+.cbar div{height:100%;background:var(--hl);display:flex;align-items:center;padding-left:8px;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11.5px;white-space:nowrap}
+.cnote{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12.5px;color:var(--mute);margin-bottom:8px}
+svg{display:block;max-width:100%;height:auto}
+.svgt{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+footer{margin-top:30px;border-top:1px solid var(--rule);padding-top:12px;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13.5px;color:var(--mute)}
+footer a{color:var(--accent2)}
+.note{font-size:14.5px;color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="kicker">Training Efficient LLMs · Interactive · Chapter 13</div>
+<h1>The Attention Zoo</h1>
+
+<p>Six tabs, two kinds of animation. Five variants of attention are animated on the same decoding loop; the <b>FlashAttention</b> tab is different — it opens up a single attention op and shows tiles of Q, K, and V moving between slow HBM and tiny on-chip SRAM, because Flash changes <em>where the bytes live</em>, not what gets cached. Press <b>Generate</b> and watch tokens appear one by one; every new token writes into the KV cache (the grid), and to be produced at all it must <em>read everything currently cached</em> (the amber sweep) — that read traffic is what decode throughput is made of. Now switch tabs and watch what each design does to the size of the grid. Numbers on the right are real, computed from each mechanism's published configuration.</p>
+
+<div class="tabs" id="tabs">
+  <button data-v="mha" class="on">MHA</button>
+  <button data-v="flash">FlashAttention</button>
+  <button data-v="gqa">GQA</button>
+  <button data-v="mqa">MQA</button>
+  <button data-v="mla">MLA</button>
+  <button data-v="swa">Sliding window</button>
+</div>
+<div class="panel">
+  <div id="desc"></div>
+  <div class="controls">
+    <button class="ctl" id="play">Generate ▶</button>
+    <button class="ctl sec" id="step">+1 token</button>
+    <button class="ctl sec" id="reset">Reset</button>
+    <span id="xctl"></span>
+  </div>
+  <div class="stats">
+    <div><b id="lb_t">tokens generated</b><span class="v" id="s_t">0</span></div>
+    <div><b id="lb_h">q : kv heads</b><span class="v" id="s_h">–</span></div>
+    <div><b id="lb_kv">KV cache / token (all layers)</b><span class="v hl" id="s_kv">–</span></div>
+    <div><b id="lb_kv8">cache at 8K context</b><span class="v hl" id="s_kv8">–</span></div>
+  </div>
+  <div class="cbar"><div id="bar" style="width:100%">&nbsp;</div></div>
+  <div class="cnote" id="barnote"></div>
+  <svg id="scene" viewBox="0 0 900 430" aria-label="Animated decoding: query heads on the left write to and read from KV cache lanes; the cache grid grows with each generated token"></svg>
+  <div class="note" id="footnote"></div>
+</div>
+
+<p class="note">The wiring on the left shows 8 visual query heads standing in for the real head count; the cache lanes are what actually costs memory at inference. All cache figures assume BF16 and each model's real layer count. The mechanics, equations, and trade-offs of each design are Chapter 13 of the book, which uses this page as its companion.</p>
+
+<footer><a href="../pdf/ch13_attention.pdf">Chapter 13 — Making attention cheap</a> · <a href="../index.html">Training Efficient LLMs</a></footer>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const NAVY='#17406b', BLUE='#3f74b8', LT='#9dbfe4', PALE='#dbe7f6', AMB='#b45309';
+const MAXTOK=22;
+let t=0, timer=null, variant='mha', gqaG=8, swaW=8;
+
+// real configs for readouts (per token, all layers, BF16)
+function realStats(){
+  switch(variant){
+    case 'mha': return {hq:32,hkv:32,kv:2*32*32*128*2, layers:'Llama 2 7B · 32 layers', name:'32 : 32'};
+    case 'gqa': { const kv=2*32*gqaG*128*2; return {hq:32,hkv:gqaG,kv:kv, layers:'Llama-3-style · 32 layers', name:'32 : '+gqaG}; }
+    case 'mqa': return {hq:32,hkv:1,kv:2*32*1*128*2, layers:'PaLM-style · 32 layers', name:'32 : 1'};
+    case 'mla': return {hq:128,hkv:0,kv:576*2*61, layers:'DeepSeek-V3 · 61 layers · latent 512+64', name:'128 q → latent'};
+    case 'swa': return {hq:32,hkv:8,kv:2*32*8*128*2, layers:'Mistral-style · 32 layers · window', name:'32 : 8, W'};
+  }
+}
+const MHA_KV = 2*32*32*128*2;   // baseline bytes/token
+function kb(x){ return x>=1024?(x/1024>=1024?(x/1048576).toFixed(1)+' GB':(x/1024).toFixed(0)+' KB'):x+' B'; }
+function gb(x){ return x>=1e9?(x/1e9).toFixed(1)+' GB':(x/1e6).toFixed(0)+' MB'; }
+
+const DESCS={
+ flash:'<b>FlashAttention.</b> Exact attention, zero approximation — the trick is purely about memory traffic. A block of query rows sits in SRAM while K/V blocks stream through; each score tile is computed on-chip, folded into a running output with the online softmax (running max m, running sum ℓ), and thrown away. The L×L matrix never touches HBM. Press <b>Run tiles</b>. <span class="models">EVERY FRONTIER MODEL · FA2 · FA3 · SDPA</span>',
+ mha:'<b>Multi-head attention.</b> Every query head owns a private key/value head, and all of them are cached for every token. Maximum expressiveness, maximum memory — the grid below grows at full width forever. <span class="models">TRANSFORMER 2017 · LLAMA 2 · OLMO 2</span>',
+ gqa:'<b>Grouped-query attention.</b> Query heads are split into groups that share a KV head — the questions stay diverse, the library is consolidated. Try the group selector: the grid narrows while the wiring shows who shares. <span class="models">LLAMA 3 · QWEN · MISTRAL · GEMMA</span>',
+ mqa:'<b>Multi-query attention.</b> One key head and one value head serve all 32 questioners. The cache collapses by 32× — and so does the diversity of how the sequence can be indexed, which is why the field stepped back to GQA. <span class="models">PALM · FALCON · STARCODER</span>',
+ mla:'<b>Multi-head latent attention.</b> Each token is compressed to a 576-number latent, and that is all that gets cached; a query-side algebraic trick attends directly on the latents, so nothing is ever decompressed. A 671B model caches less per token than a vanilla 7B. <span class="models">DEEPSEEK V2 · V3 · R1</span>',
+ swa:'<b>Sliding-window attention.</b> Each token attends only to the last W positions, so the cache is a rolling buffer: when a new token arrives past the window, the oldest column is evicted (watch the left edge). Long-range facts survive only via layer-by-layer hops — or via the full-attention layers a hybrid stack keeps. <span class="models">MISTRAL · GEMMA 2/3 (LOCAL LAYERS)</span>'
+};
+const FOOT={
+ flash:'Numbers are one head at L = 8192, d = 128, BF16, streamed in 2048-token tiles (causal, so tile j ≤ i). A naive kernel writes the score matrix S and the softmax P to HBM and reads each back: ~32 MB of round trips per tile that Flash never makes. The FLOPs are identical — only the bytes move less.',
+ mha:'Reading cost per generated token: the entire grid. At 32K context and batch 32 this is the 550 GB problem from the chapter opening.',
+ gqa:'Ainslie et al.: quality ≈ MHA down to ~8 groups, and an MHA checkpoint converts by mean-pooling KV heads + ~5% uptraining.',
+ mqa:'The all-heads sweep converging on one lane is the picture of the quality risk: every head must index the sequence identically.',
+ mla:'Amber cells are latents (512+64 dims), not keys and values. The per-head variety lives in learned up-projections absorbed into the query — the cache never grows in width, only in length.',
+ swa:'Compute also drops: each new token scores only W pairs instead of t. The price is that nothing outside the window is directly visible — evicted columns are gone.'
+};
+
+function visualLanes(){
+  if(variant==='mha') return 8;
+  if(variant==='gqa') return ({2:1,4:1,8:2,16:4})[gqaG]||2;
+  if(variant==='swa') return 2;
+  return 1; // mqa, mla
+}
+
+// ---------- FlashAttention tab: HBM ⇄ SRAM tiling animation ----------
+// 4 blocks of 2048 tokens (L=8192, d=128, BF16, one head). Causal: tile (i,j) with j<=i.
+const FSTEPS=(function(){
+  const st=[];
+  for(let i=0;i<4;i++){
+    st.push({t:'loadQ',i});
+    for(let j=0;j<=i;j++){ st.push({t:'loadKV',i,j}); st.push({t:'compute',i,j}); st.push({t:'accum',i,j}); }
+    st.push({t:'writeO',i});
+  }
+  return st;
+})();
+let fstep=-1; // index of last executed step
+const MB_Q=0.5, MB_KV=1.0, MB_O=0.5, MB_NAIVE_TILE=32; // 2048×128×2B = 0.5 MB; 4×2048²×2B = 32 MB
+
+const FMSG={
+  loadQ:s=>`Load Q${s.i+1} into SRAM — it will sit there while every K/V block streams past. Reset accumulators: m = −∞, ℓ = 0, O = 0.`,
+  loadKV:s=>`Stream K${s.j+1} and V${s.j+1} from HBM into SRAM (1 MB). This is the only per-tile HBM traffic Flash pays.`,
+  compute:s=>`Compute the score tile S̃ = Q${s.i+1}K${s.j+1}ᵀ/√d entirely on-chip. It exists only in SRAM — 8 MB that never touches HBM.`,
+  accum:s=>`Online softmax: m′ = max(m, rowmax S̃); rescale O by e^(m−m′); fold e^(S̃−m′)·V${s.j+1} into O; update ℓ. Discard the tile.`,
+  writeO:s=>`Query row done — normalize by ℓ and write O${s.i+1} back to HBM (0.5 MB). HBM only ever sees the answer.`
+};
+
+function flashState(){
+  // reconstruct visible state from steps 0..fstep
+  const st={qi:-1,kj:-1,phase:null,folded:0,writtenO:[],flashMB:0,naiveMB:0,doneTiles:[]};
+  for(let k=0;k<=fstep;k++){
+    const s=FSTEPS[k];
+    if(s.t==='loadQ'){ st.qi=s.i; st.kj=-1; st.folded=0; st.flashMB+=MB_Q; }
+    if(s.t==='loadKV'){ st.kj=s.j; st.flashMB+=MB_KV; }
+    if(s.t==='compute'){ st.naiveMB+=MB_NAIVE_TILE; }
+    if(s.t==='accum'){ st.folded=s.j+1; st.doneTiles.push(s.i+'_'+s.j); }
+    if(s.t==='writeO'){ st.writtenO.push(s.i); st.kj=-1; st.flashMB+=MB_O; }
+    st.phase=s.t;
+  }
+  return st;
+}
+
+function renderFlash(){
+  const st=flashState();
+  const cur=fstep>=0?FSTEPS[fstep]:null;
+  const done=fstep>=FSTEPS.length-1;
+  $('lb_t').textContent='tile step'; $('lb_h').textContent='resident in SRAM';
+  $('lb_kv').textContent='HBM traffic so far (Flash)'; $('lb_kv8').textContent='naive kernel by now (extra)';
+  $('s_t').textContent = cur? (fstep+1)+' / '+FSTEPS.length+' · '+cur.t : '0 / '+FSTEPS.length;
+  $('s_h').textContent = st.qi<0?'–':('Q'+(st.qi+1)+(st.kj>=0?' · K'+(st.kj+1)+' V'+(st.kj+1):'')+(st.phase==='compute'||st.phase==='accum'?' · S̃':'')+' · m ℓ O');
+  $('s_kv').textContent = st.flashMB.toFixed(1)+' MB';
+  $('s_kv8').textContent = '+'+st.naiveMB.toFixed(0)+' MB';
+  const frac = st.naiveMB>0? Math.max(0.02, st.flashMB/(st.naiveMB+st.flashMB)) : 1;
+  $('bar').style.width=(frac*100)+'%';
+  $('bar').textContent = st.naiveMB>0 ? (frac*100).toFixed(0)+'% of naive traffic' : ' ';
+  $('barnote').textContent='HBM bytes moved by Flash vs a naive kernel at the same point (one head, L = 8192, d = 128, BF16, 2048-token tiles). Full run: ~'+(4*MB_Q+10*MB_KV+4*MB_O).toFixed(0)+' MB vs ~'+(4*MB_Q+10*MB_KV+4*MB_O+10*MB_NAIVE_TILE).toFixed(0)+' MB.';
+  $('desc').innerHTML=DESCS.flash;
+  $('footnote').textContent=FOOT.flash + (done? '  ✓ Done: entire attention computed, S never materialized.':'');
+
+  let s='<defs><marker id="fa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="'+AMB+'"/></marker></defs>';
+  const msg = cur? FMSG[cur.t](cur) : 'Press Run tiles ▶ (or +1 step) to stream the first blocks into SRAM.';
+  // message strip
+  s+=`<rect x="16" y="6" width="868" height="36" fill="#f2f5f9" stroke="${LT}" rx="4"/>`;
+  s+=`<text class="svgt" x="28" y="29" font-size="12.5" fill="${NAVY}">${msg}</text>`;
+
+  // ---- HBM zone
+  s+=`<rect x="16" y="56" width="304" height="356" fill="#fff" stroke="${NAVY}" stroke-width="1.6" rx="6"/>`;
+  s+=`<text class="svgt" x="30" y="78" font-size="12.5" font-weight="600" fill="${NAVY}">HBM · 80 GB · ~3 TB/s (slow)</text>`;
+  const colX={Q:36,K:132,V:228}; const bw=56,bh=26,bg=7;
+  ['Q','K','V'].forEach(c=>{ s+=`<text class="svgt" x="${colX[c]+bw/2}" y="${100}" text-anchor="middle" font-size="11" fill="${BLUE}">${c} blocks</text>`; });
+  for(let i=0;i<4;i++){
+    const y=108+i*(bh+bg);
+    const qOn = st.qi===i && !st.writtenO.includes(i) && st.qi>=0;
+    s+=`<rect x="${colX.Q}" y="${y}" width="${bw}" height="${bh}" fill="${st.writtenO.includes(i)?'#eceff4':(qOn?PALE:NAVY)}" stroke="${qOn?AMB:NAVY}" stroke-width="${qOn?2:1}" rx="2"/>`;
+    s+=`<text class="svgt" x="${colX.Q+bw/2}" y="${y+17}" text-anchor="middle" font-size="11" fill="${qOn||st.writtenO.includes(i)?NAVY:'#fff'}">Q${i+1}</text>`;
+    const kOn = st.kj===i && st.qi>=0;
+    s+=`<rect x="${colX.K}" y="${y}" width="${bw}" height="${bh}" fill="${kOn?PALE:BLUE}" stroke="${kOn?AMB:BLUE}" stroke-width="${kOn?2:1}" rx="2"/>`;
+    s+=`<text class="svgt" x="${colX.K+bw/2}" y="${y+17}" text-anchor="middle" font-size="11" fill="${kOn?NAVY:'#fff'}">K${i+1}</text>`;
+    s+=`<rect x="${colX.V}" y="${y}" width="${bw}" height="${bh}" fill="${kOn?PALE:BLUE}" stroke="${kOn?AMB:BLUE}" stroke-width="${kOn?2:1}" rx="2"/>`;
+    s+=`<text class="svgt" x="${colX.V+bw/2}" y="${y+17}" text-anchor="middle" font-size="11" fill="${kOn?NAVY:'#fff'}">V${i+1}</text>`;
+  }
+  // O row
+  s+=`<text class="svgt" x="36" y="266" font-size="11" fill="${BLUE}">O (the output) — written once per query block:</text>`;
+  for(let i=0;i<4;i++){
+    const x=36+i*(bw+8), y=274;
+    const w=st.writtenO.includes(i);
+    s+=`<rect x="${x}" y="${y}" width="${bw}" height="${bh}" fill="${w?NAVY:'#fff'}" stroke="${NAVY}" stroke-dasharray="${w?'none':'3 3'}" rx="2"/>`;
+    s+=`<text class="svgt" x="${x+bw/2}" y="${y+17}" text-anchor="middle" font-size="11" fill="${w?'#fff':LT}">O${i+1}</text>`;
+  }
+  // ghost S
+  s+=`<rect x="36" y="322" width="248" height="70" fill="none" stroke="${AMB}" stroke-dasharray="6 4" rx="4"/>`;
+  s+=`<line x1="40" y1="326" x2="280" y2="388" stroke="${AMB}" stroke-width="1.2"/><line x1="280" y1="326" x2="40" y2="388" stroke="${AMB}" stroke-width="1.2"/>`;
+  s+=`<text class="svgt" x="160" y="348" text-anchor="middle" font-size="11.5" fill="${AMB}">S = QKᵀ (8192 × 8192)</text>`;
+  s+=`<text class="svgt" x="160" y="366" text-anchor="middle" font-size="11.5" font-weight="600" fill="${AMB}">256 MB — never written here</text>`;
+
+  // ---- SRAM zone
+  s+=`<rect x="560" y="56" width="324" height="238" fill="#fffdf7" stroke="${AMB}" stroke-width="1.8" rx="6"/>`;
+  s+=`<text class="svgt" x="574" y="78" font-size="12.5" font-weight="600" fill="${AMB}">SRAM · ~200 KB per SM · ~20 TB/s (fast)</text>`;
+  const slot=(x,y,w,h,label,on,col)=>{
+    s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${on?col:'#fff'}" stroke="${on?col:LT}" stroke-dasharray="${on?'none':'3 3'}" rx="3"/>`;
+    s+=`<text class="svgt" x="${x+w/2}" y="${y+h/2+4}" text-anchor="middle" font-size="11" fill="${on?'#fff':LT}">${label}</text>`;
+  };
+  slot(578,92,76,30, st.qi>=0?'Q'+(st.qi+1):'Q tile', st.qi>=0, NAVY);
+  slot(578,132,76,30, st.kj>=0?'K'+(st.kj+1):'K tile', st.kj>=0, BLUE);
+  slot(578,172,76,30, st.kj>=0?'V'+(st.kj+1):'V tile', st.kj>=0, BLUE);
+  const tileOn = st.phase==='compute'||st.phase==='accum';
+  slot(682,92,64,64, tileOn?'S̃':'S̃ tile', st.phase==='compute', AMB);
+  if(st.phase==='accum') s+=`<rect x="682" y="92" width="64" height="64" fill="none" stroke="${AMB}" stroke-width="2" stroke-dasharray="4 3" rx="3"/><text class="svgt" x="714" y="128" text-anchor="middle" font-size="11" fill="${AMB}">folding…</text>`;
+  s+=`<text class="svgt" x="714" y="176" text-anchor="middle" font-size="10.5" fill="${st.qi>=0?AMB:LT}">m, ℓ</text>`;
+  s+=`<text class="svgt" x="714" y="190" text-anchor="middle" font-size="10" fill="${'#5c5c5c'}">running max &amp; sum</text>`;
+  // O accumulator with fill level
+  const oAccOn = st.qi>=0 && !st.writtenO.includes(st.qi);
+  s+=`<rect x="774" y="92" width="76" height="64" fill="#fff" stroke="${oAccOn?NAVY:LT}" stroke-dasharray="${oAccOn?'none':'3 3'}" rx="3"/>`;
+  if(oAccOn && st.folded>0){ const fh=64*st.folded/(st.qi+1); s+=`<rect x="774" y="${92+64-fh}" width="76" height="${fh}" fill="${PALE}" rx="3"/>`; }
+  s+=`<text class="svgt" x="812" y="120" text-anchor="middle" font-size="11" fill="${oAccOn?NAVY:LT}">O acc</text>`;
+  if(oAccOn) s+=`<text class="svgt" x="812" y="136" text-anchor="middle" font-size="10" fill="${BLUE}">${st.folded} / ${st.qi+1} folded</text>`;
+  s+=`<text class="svgt" x="578" y="226" font-size="10.5" fill="#5c5c5c">Everything in this box fits in ~200 KB. The tile is</text>`;
+  s+=`<text class="svgt" x="578" y="240" font-size="10.5" fill="#5c5c5c">computed, folded into O, and thrown away — every block.</text>`;
+  s+=`<text class="svgt" x="578" y="254" font-size="10.5" fill="#5c5c5c">Backward pass? Recompute the tiles. Cheaper than storing.</text>`;
+
+  // transfer arrows
+  const arrow=(y1,y2,label,dir)=>{
+    const x1=dir>0?322:558, x2=dir>0?556:324;
+    s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${AMB}" stroke-width="2.4" marker-end="url(#fa)"/>`;
+    s+=`<text class="svgt" x="${(x1+x2)/2}" y="${Math.min(y1,y2)-8}" text-anchor="middle" font-size="11" font-weight="600" fill="${AMB}">${label}</text>`;
+  };
+  if(st.phase==='loadQ') arrow(121+st.qi*33,107,'Q'+(st.qi+1)+' → SRAM · 0.5 MB',1);
+  if(st.phase==='loadKV') arrow(121+st.kj*33,150,'K'+(st.kj+1)+' V'+(st.kj+1)+' → SRAM · 1 MB',1);
+  if(st.phase==='writeO') arrow(240,287,'O'+(cur.i+1)+' → HBM · 0.5 MB',-1);
+
+  // tile map (causal)
+  s+=`<text class="svgt" x="560" y="322" font-size="11" fill="${BLUE}">tile map (causal — j ≤ i):</text>`;
+  for(let i=0;i<4;i++) for(let j=0;j<4;j++){
+    const x=560+j*30, y=332+i*20;
+    if(j>i){ s+=`<rect x="${x}" y="${y}" width="26" height="16" fill="#f4f4f2" rx="2"/>`; continue; }
+    const dd=st.doneTiles.includes(i+'_'+j);
+    const isCur = cur && cur.i===i && cur.j===j && (cur.t==='compute'||cur.t==='accum'||cur.t==='loadKV');
+    s+=`<rect x="${x}" y="${y}" width="26" height="16" fill="${isCur?AMB:(dd?NAVY:'#fff')}" stroke="${dd||isCur?'none':LT}" rx="2"/>`;
+  }
+  s+=`<text class="svgt" x="700" y="345" font-size="10.5" fill="#5c5c5c">each cell = one 2048×2048 score tile,</text>`;
+  s+=`<text class="svgt" x="700" y="360" font-size="10.5" fill="#5c5c5c">computed in SRAM, never stored.</text>`;
+  s+=`<text class="svgt" x="700" y="382" font-size="10.5" fill="${AMB}">naive: 4 round trips × 8 MB per tile</text>`;
+  s+=`<text class="svgt" x="700" y="397" font-size="10.5" fill="${AMB}">through HBM. Flash: none.</text>`;
+
+  $('scene').innerHTML=s;
+}
+
+function render(){
+  if(variant==='flash'){ renderFlash(); return; }
+  $('lb_t').textContent='tokens generated'; $('lb_h').textContent='q : kv heads';
+  $('lb_kv').textContent='KV cache / token (all layers)'; $('lb_kv8').textContent='cache at 8K context';
+  const r=realStats();
+  $('s_t').textContent=t;
+  $('s_h').textContent=r.name;
+  const kvtok = variant==='swa' ? r.kv : r.kv;
+  $('s_kv').textContent=kb(r.kv);
+  let at8k = r.kv*8192;
+  if(variant==='swa') at8k = r.kv*Math.min(8192,4096);
+  $('s_kv8').textContent=gb(at8k)+(variant==='swa'?' (capped at W=4096)':'');
+  const frac=Math.max(0.018, (variant==='swa'? r.kv*4096 : r.kv*8192)/(MHA_KV*8192));
+  $('bar').style.width=(frac*100)+'%';
+  $('bar').textContent=(frac*100).toFixed(frac<0.05?1:0)+'% of MHA';
+  $('barnote').textContent='Cache at 8K context relative to full multi-head attention ('+gb(MHA_KV*8192)+'). '+r.layers+'.';
+  $('desc').innerHTML=DESCS[variant];
+  $('footnote').textContent=FOOT[variant];
+
+  // ---- scene
+  const L=visualLanes();
+  const laneH=26, laneGap=10;
+  const lanesY0=90, headY0=60, headGap=34;
+  let s='<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#b45309"/></marker>'+
+        '<marker id="an" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9dbfe4"/></marker></defs>';
+  // headers
+  s+=`<text class="svgt" x="24" y="40" font-size="12" fill="${BLUE}" letter-spacing=".08em">QUERY HEADS</text>`;
+  s+=`<text class="svgt" x="196" y="40" font-size="12" fill="${BLUE}" letter-spacing=".08em">${variant==='mla'?'LATENT CACHE LANE':'KV CACHE LANES'}</text>`;
+  s+=`<text class="svgt" x="330" y="40" font-size="12" fill="${BLUE}" letter-spacing=".08em">THE KV CACHE — ONE COLUMN PER TOKEN</text>`;
+  // query heads (8 visual)
+  const headX=24, headW=40;
+  const laneX=196, laneW=64;
+  const laneYs=[];
+  const totalLaneSpan = 8*headGap;
+  for(let j=0;j<L;j++){
+    const y = lanesY0 + (j+0.5)*(totalLaneSpan/L) - laneH/2 - 30;
+    laneYs.push(y);
+  }
+  for(let i=0;i<8;i++){
+    const y=headY0+i*headGap;
+    s+=`<rect x="${headX}" y="${y}" width="${headW}" height="22" fill="#fff" stroke="${NAVY}"/>`;
+    s+=`<text class="svgt" x="${headX+headW/2}" y="${y+16}" text-anchor="middle" font-size="11" fill="${NAVY}">q${i+1}</text>`;
+    const lane=Math.floor(i/(8/L));
+    const ly=laneYs[lane]+laneH/2;
+    s+=`<line x1="${headX+headW}" y1="${y+11}" x2="${laneX-4}" y2="${ly}" stroke="${LT}" stroke-width="1.2" marker-end="url(#an)"/>`;
+  }
+  for(let j=0;j<L;j++){
+    const y=laneYs[j];
+    const col=variant==='mla'?AMB:NAVY;
+    s+=`<rect x="${laneX}" y="${y}" width="${laneW}" height="${laneH}" fill="${col}"/>`;
+    s+=`<text class="svgt" x="${laneX+laneW/2}" y="${y+17}" text-anchor="middle" fill="#fff" font-size="10.5">${variant==='mla'?'c latent':(L===1?'KV':'KV '+(j+1))}</text>`;
+  }
+  if(variant==='gqa') s+=`<text class="svgt" x="${laneX+laneW/2}" y="${lanesY0+totalLaneSpan-14}" text-anchor="middle" font-size="10.5" fill="${BLUE}">${32/gqaG} queries share each</text>`;
+  if(variant==='mqa'||variant==='mla') s+=`<text class="svgt" x="${laneX+laneW/2}" y="${lanesY0+totalLaneSpan-14}" text-anchor="middle" font-size="10.5" fill="${BLUE}">all heads share</text>`;
+
+  // cache grid
+  const gx=330, gw=540, cellW=Math.floor(gw/MAXTOK)-2;
+  const gridRows=L, cellH=variant==='mla'?12:Math.min(20, Math.floor((totalLaneSpan-40)/gridRows)-4);
+  const gy0=lanesY0-10;
+  const evicted = variant==='swa' ? Math.max(0, t-swaW) : 0;
+  for(let k=0;k<t && k<MAXTOK;k++){
+    const x=gx+k*(cellW+2);
+    const isEvicted = variant==='swa' && k<evicted;
+    for(let j=0;j<gridRows;j++){
+      const y=gy0+j*(cellH+5);
+      const col = isEvicted ? '#eceff4' : (variant==='mla'?AMB:(j%2?BLUE:NAVY));
+      const strk = isEvicted ? `stroke="${LT}" stroke-dasharray="2 2"` : '';
+      s+=`<rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" fill="${col}" ${strk} rx="1"/>`;
+    }
+    if(k===t-1 && t<=MAXTOK){
+      s+=`<text class="svgt" x="${x+cellW/2}" y="${gy0-8}" text-anchor="middle" font-size="10" fill="${AMB}">new</text>`;
+    }
+  }
+  if(evicted>0){
+    s+=`<text class="svgt" x="${gx}" y="${gy0+gridRows*(cellH+5)+16}" font-size="10.5" fill="${AMB}">← ${evicted} column${evicted>1?'s':''} evicted (outside window W=${swaW})</text>`;
+  }
+  // read sweep from newest token
+  if(t>0){
+    const newestK=Math.min(t,MAXTOK)-1;
+    const nx=gx+newestK*(cellW+2)+cellW/2;
+    const ny=gy0+gridRows*(cellH+5)+34;
+    s+=`<text class="svgt" x="${nx}" y="${ny+16}" text-anchor="middle" font-size="10.5" fill="${AMB}">token ${t} reads ⟶</text>`;
+    const from = variant==='swa'? evicted : 0;
+    const readCols = Math.min(t,MAXTOK)-from;
+    const rx0=gx+from*(cellW+2);
+    s+=`<path d="M ${nx},${ny} C ${nx-40},${ny-6} ${rx0+30},${ny-6} ${rx0},${gy0+gridRows*(cellH+5)+2}" fill="none" stroke="${AMB}" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar)"/>`;
+    s+=`<rect x="${rx0-2}" y="${gy0-4}" width="${readCols*(cellW+2)+2}" height="${gridRows*(cellH+5)+4}" fill="none" stroke="${AMB}" stroke-width="1.4" ${variant==='swa'?'':''} rx="3"/>`;
+    s+=`<text class="svgt" x="${rx0+readCols*(cellW+2)/2}" y="${gy0+gridRows*(cellH+5)+74}" text-anchor="middle" font-size="10.5" fill="#5c5c5c">bytes read per generated token = the outlined area × ${variant==='mla'?'61 layers':'32 layers'}</text>`;
+  }
+  if(t>MAXTOK) s+=`<text class="svgt" x="${gx+gw-4}" y="${gy0-8}" text-anchor="end" font-size="10.5" fill="#5c5c5c">…showing last ${MAXTOK} of ${t}</text>`;
+  $('scene').innerHTML=s;
+}
+
+function extraControls(){
+  const x=$('xctl');
+  if(variant==='gqa'){
+    x.innerHTML='KV groups: <select id="gsel"><option value="2">2</option><option value="4">4</option><option value="8" selected>8 (Llama 3)</option><option value="16">16</option></select>';
+    $('gsel').value=String(gqaG);
+    $('gsel').onchange=e=>{gqaG=+e.target.value;render();};
+  } else if(variant==='swa'){
+    x.innerHTML='window W (visual): <input type="range" id="wsel" min="4" max="16" value="'+swaW+'"> <span id="wv" style="font-family:ui-monospace,Menlo,monospace;color:var(--accent)">'+swaW+'</span>';
+    $('wsel').oninput=e=>{swaW=+e.target.value;$('wv').textContent=swaW;render();};
+  } else x.innerHTML='';
+}
+function playLabel(){ return variant==='flash' ? 'Run tiles ▶' : 'Generate ▶'; }
+function stopTimer(){ if(timer){ clearInterval(timer); timer=null; } $('play').textContent=playLabel(); }
+function setVariant(v){
+  variant=v; stopTimer();
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  $('step').textContent = v==='flash' ? '+1 step' : '+1 token';
+  extraControls(); render();
+}
+function tick(){
+  if(variant==='flash'){
+    if(fstep>=FSTEPS.length-1){ stopTimer(); return; }
+    fstep++;
+  } else t++;
+  render();
+}
+$('play').onclick=function(){
+  if(timer){ stopTimer(); return; }
+  this.textContent='Pause ⏸'; timer=setInterval(tick, variant==='flash'?900:380);
+};
+$('step').onclick=tick;
+$('reset').onclick=()=>{ if(variant==='flash') fstep=-1; else t=0; render(); };
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>setVariant(b.dataset.v));
+setVariant('mha');
+})();
+</script>
+</body>
+</html>

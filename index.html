@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Training Efficient LLMs</title>
+<meta name="description" content="A six-month program that takes an engineer from ML fundamentals to training and fine-tuning large language models efficiently — with a book, labs, and materials.">
+<style>
+:root{--ink:#1a1a1a;--mute:#5c5c5c;--mid:#a3a3a3;--rule:#d9d9d9;--soft:#f2f5f9;--bg:#fdfdfb;--accent:#17406b;--accent2:#3f74b8;--hl:#b45309}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-size:17px;line-height:1.6}
+.page{max-width:960px;margin:0 auto;padding:48px 28px 96px}
+header.site{border-bottom:2px solid var(--accent);padding-bottom:20px;margin-bottom:34px}
+.kicker{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}
+h1{font-size:40px;line-height:1.12;margin:8px 0 8px;letter-spacing:-.01em}
+.sub{color:var(--mute);font-style:italic;font-size:19px}
+h2{font-size:25px;margin:46px 0 12px;letter-spacing:-.01em;color:var(--accent)}
+p{margin:0 0 16px;max-width:820px}
+p.lead{font-size:18.5px}
+a{color:var(--accent2)}
+a:hover{color:var(--accent)}
+.phase-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:15px}
+.phase-table th{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent2);text-align:left;padding:8px 12px;border-bottom:2px solid var(--accent)}
+.phase-table td{padding:14px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+.phase-table tr:nth-child(even) td{background:#f7f9fc}
+.ph{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-weight:600;color:var(--accent);white-space:nowrap}
+.ph small{display:block;font-weight:400;color:var(--mute);margin-top:2px}
+.phase-table .t{font-weight:700;color:var(--accent);display:block;margin-bottom:4px;font-size:15.5px}
+.deliv{font-size:14px;color:var(--ink)}
+.mat{font-size:14px;line-height:1.7}
+.mat .lbl{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);display:block;margin-top:6px}
+.mat .lbl:first-child{margin-top:0}
+.mat .soon{color:var(--mid);font-style:italic}
+.mat a{text-decoration:none;border-bottom:1px dotted var(--accent2)}
+.pill{display:inline-block;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.04em;border:1px solid var(--rule);border-radius:3px;padding:0 6px;color:var(--mute);margin-left:6px;vertical-align:1px}
+.chapters{list-style:none;padding:0;margin:14px 0 0;max-width:820px}
+.chapters li{display:flex;gap:14px;align-items:baseline;padding:10px 4px;border-top:1px dotted var(--rule)}
+.chapters li:first-child{border-top:0}
+.chapters .n{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13px;color:var(--accent2);min-width:2.6em}
+.chapters .links{margin-left:auto;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13px;white-space:nowrap}
+.note{background:var(--soft);border-left:3px solid var(--accent2);padding:12px 18px;margin:22px 0;font-size:15.5px;max-width:820px}
+footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:var(--mute);font-size:14px;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+@media (max-width:760px){.phase-table thead{display:none}.phase-table td{display:block;border-bottom:0}.phase-table tr{display:block;border-bottom:1px solid var(--rule);padding:8px 0}}
+@media print{.page{padding:0}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="site">
+  <div class="kicker">Omar U. Florez · omar-florez.github.io</div>
+  <h1>Training Efficient LLMs</h1>
+  <div class="sub">A six-month path from engineer to someone who trains large language models — efficiently</div>
+</header>
+
+<p class="lead">Most engineers who want to train language models get stuck in the same place: they can fine-tune a model by following a tutorial, but the space between that and <em>running a real training effort</em> — choosing the data, owning the pipelines, measuring what matters, and not wasting the compute budget — looks like a wall. This program is built to take a working engineer over that wall in six months. It pairs a book written from direct experience pre-training a large model for Latin America with hands-on pipelines you build yourself: data generation and validation, training and fine-tuning, benchmarking, and model selection.</p>
+
+<p>The premise, which is also the premise of the book: most waste in training is in decisions, not kernels. Efficiency is learned by making the decisions yourself — on real data, with real numbers, against real baselines — with each phase below producing something that works, not just something you studied.</p>
+
+<h2>The program</h2>
+
+<p><a href="slides/training-efficient-llms-program.pptx">Program slides (pptx)</a> · <a href="slides/training-efficient-llms-program.pdf">full pdf</a> — one slide per phase plus one per written chapter; each phase row below links its own slice.</p>
+
+<p>Six months, five phases. Each phase lists what you will do, what you will have built by the end of it, and the materials that support it — book chapters, videos, and references are added here as they are produced.</p>
+
+<table class="phase-table">
+<thead>
+<tr><th style="width:110px">Phase</th><th>What you will do</th><th style="width:220px">What you will have built</th><th style="width:250px">Materials</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td class="ph">1<small>Months 1–2</small></td>
+  <td><span class="t">Foundations: how models are trained</span>
+  Intensive training in the fundamentals that everything else stands on: how learning works (loss, gradients, backpropagation), language modeling and tokenization, the transformer as a machine you can count, agentic AI, model evaluation, and synthetic data generation. Weekly hands-on sessions: every concept is implemented small before it is used big.</td>
+  <td class="deliv">A shared foundation across the team; working implementations of the core mechanisms (training loop, tokenizer, attention, evaluation harness) written by each engineer.</td>
+  <td class="mat">
+    <span class="lbl">Slides</span>
+    <a href="slides/slides-phase1.pdf">phase deck (pdf)</a>
+    <span class="lbl">Book</span>
+    <a href="pdf/ch01_programs.pdf">Ch. 1 — Programs you don't write</a><br>
+    <a href="pdf/ch02_language_modeling.pdf">Ch. 2 — Language modeling</a><br>
+    <a href="pdf/ch03_transformer.pdf">Ch. 3 — The transformer, mechanically</a>
+    <span class="lbl">Interactive</span>
+    <a href="interactive/gradient-descent.html">Gradient descent playground</a><br>
+    <a href="interactive/backprop.html">Forward &amp; backward, step by step</a><br>
+    <a href="interactive/bpe.html">BPE, one merge at a time</a><br>
+    <a href="interactive/param-counter.html">The parameter counter</a><br>
+    <a href="interactive/rope.html">RoPE: positions as rotations</a><br>
+    <a href="interactive/attention.html">The attention zoo (MHA · FlashAttention · GQA · MQA · MLA · SWA)</a>
+    <span class="lbl">Videos</span>
+    <span class="soon">coming soon</span>
+    <span class="lbl">Labs (Colab)</span>
+    <a href="labs/lab_pytorch.ipynb">Lab 0a · PyTorch from zero</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/lab_pytorch.ipynb">open ▸</a><br>
+    <a href="labs/lab_huggingface.ipynb">Lab 0b · Hugging Face, full cycle</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/lab_huggingface.ipynb">open ▸</a><br>
+    <a href="labs/ch01_programs.ipynb">Ch. 1 notebook</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch01_programs.ipynb">open ▸</a><br>
+    <a href="labs/ch02_language_modeling.ipynb">Ch. 2 notebook</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch02_language_modeling.ipynb">open ▸</a><br>
+    <a href="labs/ch03_transformer.ipynb">Ch. 3 notebook</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch03_transformer.ipynb">open ▸</a>
+  </td>
+</tr>
+<tr>
+  <td class="ph">2<small>Months 2–3</small></td>
+  <td><span class="t">A data generation &amp; validation pipeline</span>
+  Design and build a reproducible pipeline for producing training data — including synthetic data (instructions, dialogues, reasoning traces) — and for validating its quality: deduplication, quality filtering, factual checks, model-as-judge review, and human sampling. Dataset versioning and traceability from day one.</td>
+  <td class="deliv">An operating data pipeline with quality metrics and versioned datasets, ready to feed training.</td>
+  <td class="mat">
+    <span class="lbl">Slides</span>
+    <a href="slides/slides-phase2.pdf">phase deck (pdf)</a>
+    <span class="lbl">Book</span>
+    <span class="soon">Ch. 10 — Data · in progress</span><br>
+    <span class="soon">Ch. 25 — Synthetic data · planned</span>
+    <span class="lbl">Videos</span>
+    <span class="soon">coming soon</span>
+  </td>
+</tr>
+<tr>
+  <td class="ph">3<small>Months 3–4</small></td>
+  <td><span class="t">A training &amp; fine-tuning pipeline</span>
+  Build a standardized training pipeline on open models: supervised fine-tuning, LoRA/QLoRA, and alignment (DPO) as the use case requires. Experiment tracking, checkpoints, metric logging, and GPU cost discipline — the pipeline should make the efficient path the default path.</td>
+  <td class="deliv">An end-to-end, reproducible fine-tuning pipeline, with at least one model adapted to a pilot domain.</td>
+  <td class="mat">
+    <span class="lbl">Slides</span>
+    <a href="slides/slides-phase3.pdf">phase deck (pdf)</a>
+    <span class="lbl">Book</span>
+    <span class="soon">Ch. 22 — SFT done cheaply · planned</span><br>
+    <span class="soon">Ch. 16 — Sequence packing · written, being formatted</span>
+    <span class="lbl">Written &amp; live</span>
+    <a href="pdf/ch13_attention.pdf">Ch. 13 — Making attention cheap</a><br>
+    <a href="interactive/attention.html">The attention zoo</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch13_attention.ipynb">Ch. 13 lab ▸</a>
+    <span class="lbl">Videos</span>
+    <span class="soon">coming soon</span>
+  </td>
+</tr>
+<tr>
+  <td class="ph">4<small>Months 4–5</small></td>
+  <td><span class="t">A benchmarking pipeline</span>
+  Build the benchmarks that measure what your users actually need — knowledge and reasoning in the domains that matter (regulation, banking, code) — and automate the evaluation: a benchmark harness, per-capability metrics, judge-based evaluation, and reports that are comparable across models and versions.</td>
+  <td class="deliv">A benchmark suite per domain and an automated evaluation pipeline that any model can be run through.</td>
+  <td class="mat">
+    <span class="lbl">Slides</span>
+    <a href="slides/slides-phase4.pdf">phase deck (pdf)</a>
+    <span class="lbl">Book</span>
+    <span class="soon">Ch. 9 — How you'll know it's working · planned</span>
+    <span class="lbl">Videos</span>
+    <span class="soon">coming soon</span>
+  </td>
+</tr>
+<tr>
+  <td class="ph">5<small>Months 5–6</small></td>
+  <td><span class="t">A ranking of open models, per use case</span>
+  Close the loop: a pipeline that periodically evaluates the leading open models (Llama, Qwen, Mistral, DeepSeek, Gemma, and whatever ships next) against your benchmark suite and produces a living ranking per use case — weighing capability, inference cost, latency, license, and ease of deployment.</td>
+  <td class="deliv">A living model ranking with a dashboard and actionable model-selection guidance, maintained by the team that built it.</td>
+  <td class="mat">
+    <span class="lbl">Slides</span>
+    <a href="slides/slides-phase5.pdf">phase deck (pdf)</a>
+    <span class="lbl">Book</span>
+    <span class="soon">Ch. 7 — Scaling laws for training &amp; inference · planned</span>
+    <span class="lbl">Videos</span>
+    <span class="soon">coming soon</span>
+  </td>
+</tr>
+</tbody>
+</table>
+
+<div class="note">Materials on this page grow as the program runs: each phase gains book chapters (HTML and PDF), session videos, and lab notebooks. If a link says <em>coming soon</em>, it is being written or recorded.</div>
+
+<h2>The book</h2>
+
+<p><em>Efficient Training of LLMs</em> is the backbone of the program: a book written in second person, from direct experience pre-training a large open model for Latin America — methods, insights, tricks, and hacks for efficient pre-training, mid-training, and post-training. Every chapter opens with a scenario you have lived, computes its numbers for real, and ends with practical considerations and a decision framework. Chapters are published here as they are finished.</p>
+
+<ul class="chapters">
+  <li><span class="n">Ch. 1</span><span>Programs you don't write — loss, gradients, and the machine that turns data into functions</span><span class="links"><a href="pdf/ch01_programs.pdf">read (pdf)</a> · <a href="interactive/gradient-descent.html">interactive</a> · <a href="interactive/backprop.html">backprop</a></span></li>
+  <li><span class="n">Ch. 2</span><span>Language modeling — tokens, cross-entropy, and the numbers you will stare at for months</span><span class="links"><a href="pdf/ch02_language_modeling.pdf">read (pdf)</a> · <a href="interactive/bpe.html">interactive</a></span></li>
+  <li><span class="n">Ch. 3</span><span>The transformer, mechanically — what each block does, what it costs, and how to count it by hand</span><span class="links"><a href="pdf/ch03_transformer.pdf">read (pdf)</a> · <a href="interactive/param-counter.html">interactive</a> · <a href="interactive/rope.html">rope</a></span></li>
+  <li><span class="n">Ch. 13</span><span>Making attention cheap — FlashAttention, MQA, GQA, MLA, sliding windows, and how to choose</span><span class="links"><a href="pdf/ch13_attention.pdf">read (pdf)</a> · <a href="interactive/attention.html">interactive</a></span></li>
+  <li><span class="n">next</span><span class="soon" style="color:var(--mid);font-style:italic">Ch. 4 — The training loop and the machine it runs on · Ch. 16 — Sequence packing (restructuring)</span></li>
+</ul>
+
+<footer>
+  Omar U. Florez, PhD — written from the experience of pre-training LatamGPT. · <a href="https://github.com/omar-florez/training-efficient-llms">Source on GitHub</a>
+</footer>
+
+</div>
+</body>
+</html>

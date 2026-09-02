@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Forward & Backward, Step by Step · Training Efficient LLMs</title>
+<style>
+:root{--ink:#1a1a1a;--mute:#5c5c5c;--mid:#a3a3a3;--rule:#d9d9d9;--soft:#f2f5f9;--bg:#fdfdfb;--accent:#17406b;--accent2:#3f74b8;--hl:#b45309}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-size:17px;line-height:1.6}
+.page{max-width:920px;margin:0 auto;padding:40px 24px 80px}
+.kicker{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}
+h1{font-size:30px;margin:6px 0 4px;color:var(--accent);letter-spacing:-.01em;border-bottom:2px solid var(--accent);padding-bottom:12px}
+p{margin:0 0 14px;max-width:860px}
+.panel{background:#fff;border:1px solid var(--rule);border-radius:6px;padding:18px;margin:20px 0}
+.controls{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:14px;margin-bottom:6px}
+.controls label{display:flex;align-items:center;gap:8px}
+input[type=range]{width:150px;accent-color:var(--accent2)}
+button{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13.5px;padding:6px 14px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:4px;cursor:pointer}
+button.sec{background:#fff;color:var(--accent)}
+button.amb{background:var(--hl);border-color:var(--hl)}
+button:disabled{opacity:.35;cursor:default}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+#msg{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:15px;min-height:44px;margin:8px 0;padding:9px 14px;background:var(--soft);border-left:3px solid var(--accent2);border-radius:0 4px 4px 0}
+#msg.back{border-left-color:var(--hl)}
+#msg b{color:var(--accent)}
+svg{display:block;max-width:100%;height:auto}
+.svgt{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+table{border-collapse:collapse;width:100%;margin:14px 0 4px;font-size:14px}
+th{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent2);text-align:left;padding:6px 10px;border-bottom:1px solid var(--accent)}
+td{padding:6px 10px;border-bottom:1px solid var(--rule);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:var(--mid)}
+tr.done td{color:var(--ink)}
+tr.now td{background:#fdf3e7;color:var(--ink)}
+td.sens{color:var(--hl);font-weight:600}
+footer{margin-top:36px;border-top:1px solid var(--rule);padding-top:12px;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13.5px;color:var(--mute)}
+footer a{color:var(--accent2)}
+.note{font-size:14.5px;color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="kicker">Training Efficient LLMs · Interactive · Chapter 1</div>
+<h1>Forward &amp; backward, step by step</h1>
+
+<p>This is Figure 1.3 from Chapter 1, made walkable. The model is <span class="mono">f = w·x + b</span> with input <span class="mono">x = 2</span> and target <span class="mono">y = 7</span>; the loss is <span class="mono">L = (f − y)²</span>. Press <b>Step</b> and watch the <b>forward pass</b> compute and record each value left to right — then keep pressing and watch the <b>backward pass</b> carry the sensitivity <span class="mono">∂L/∂·</span> right to left, multiplying in one local derivative per node. When both gradients arrive, take a <b>gradient step</b> and see the loss fall. Then move the sliders and run it again from anywhere.</p>
+
+<div class="panel">
+  <div class="controls">
+    <label>w <input type="range" id="w" min="-1" max="5" step="0.1" value="2"><span class="mono" id="wv" style="color:var(--accent);min-width:34px">2.0</span></label>
+    <label>b <input type="range" id="b" min="-2" max="4" step="0.1" value="1"><span class="mono" id="bv" style="color:var(--accent);min-width:34px">1.0</span></label>
+    <button id="step">Step ▸</button>
+    <button class="sec" id="auto">Auto-play</button>
+    <button class="amb" id="apply" disabled>Gradient step (η = 0.1)</button>
+    <button class="sec" id="reset">Reset</button>
+  </div>
+  <div id="msg">Press <b>Step</b> to begin the forward pass.</div>
+  <svg id="g" viewBox="0 0 900 340" aria-label="Computation graph: inputs feed multiply, add, subtract, square nodes producing the loss; forward values appear left to right, backward sensitivities right to left"></svg>
+
+  <table id="trace">
+    <thead><tr><th>Node</th><th>Forward value</th><th>Backward: local rule</th><th>Sensitivity ∂L/∂·</th></tr></thead>
+    <tbody>
+      <tr id="r0"><td>w·x</td><td id="v0">–</td><td>product of the inputs</td><td>–</td></tr>
+      <tr id="r1"><td>f = wx + b</td><td id="v1">–</td><td>the subtraction passes ∂L/∂e through</td><td id="s1">–</td></tr>
+      <tr id="r2"><td>e = f − y</td><td id="v2">–</td><td>through the square: ∂L/∂e = 2e</td><td id="s2">–</td></tr>
+      <tr id="r3"><td>L = e²</td><td id="v3">–</td><td>start of the walk: ∂L/∂L = 1</td><td id="s3">–</td></tr>
+      <tr id="r4"><td>w</td><td id="v4">–</td><td>nudge w → f moves by x, so multiply by x</td><td id="s4" class="sens">–</td></tr>
+      <tr id="r5"><td>b</td><td id="v5">–</td><td>nudge b → f moves by 1</td><td id="s5" class="sens">–</td></tr>
+    </tbody>
+  </table>
+  <div class="note" id="hist"></div>
+</div>
+
+<p class="note">Two facts to notice while you play. The backward pass visits each node about as often as the forward did — that is why the full gradient costs roughly two extra forward passes, for two parameters or seven billion. And the forward values (blue) must be <em>kept</em> until backward consumes them: at scale, those stored activations — not the weights — are what fill a training GPU (Chapters 1.3 and 15).</p>
+
+<footer><a href="../pdf/ch01_programs.pdf">Chapter 1 — Programs you don't write</a> · More: <a href="gradient-descent.html">gradient-descent playground</a> · <a href="../index.html">Training Efficient LLMs</a></footer>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const NAVY='#17406b', BLUE='#3f74b8', LT='#9dbfe4', PALE='#dbe7f6', AMB='#b45309', GRAY='#c9d4e2';
+const X=2, Y=7, ETA=0.1;
+let w=2, b=1, phase=0, timer=null, losses=[];
+// phases: 0 idle, 1 wx, 2 f, 3 e, 4 L, 5 dL, 6 de, 7 df, 8 dwdb(done)
+
+function vals(){
+  const wx=w*X, f=wx+b, e=f-Y, L=e*e;
+  const dL=1, de=2*e, df=de, dw=df*X, db=df;
+  return {wx,f,e,L,dL,de,df,dw,db};
+}
+const MSGS=[
+ ()=>'Press <b>Step</b> to begin the forward pass.',
+ v=>`<b>Forward 1/4:</b> multiply — w·x = ${w.toFixed(1)} × ${X} = <b>${v.wx.toFixed(1)}</b>. Computed and <i>recorded</i>.`,
+ v=>`<b>Forward 2/4:</b> add — f = wx + b = ${v.wx.toFixed(1)} + ${b.toFixed(1)} = <b>${v.f.toFixed(1)}</b>. The model's prediction.`,
+ v=>`<b>Forward 3/4:</b> subtract — e = f − y = ${v.f.toFixed(1)} − ${Y} = <b>${v.e.toFixed(1)}</b>. How wrong we are.`,
+ v=>`<b>Forward 4/4:</b> square — L = e² = <b>${v.L.toFixed(2)}</b>. One number; the forward pass is done and every intermediate is stored.`,
+ v=>`<b>Backward 1/4:</b> at the loss itself, ∂L/∂L = <b>1</b>. The walk starts here and heads left.`,
+ v=>`<b>Backward 2/4:</b> through the square — ∂L/∂e = 2e = <b>${v.de.toFixed(1)}</b>. Note it needed the <i>stored</i> forward value e = ${v.e.toFixed(1)}.`,
+ v=>`<b>Backward 3/4:</b> the subtraction passes it through unchanged — ∂L/∂f = <b>${v.df.toFixed(1)}</b>.`,
+ v=>`<b>Backward 4/4:</b> into the parameters. A unit nudge of w moves f by x = ${X}, so ∂L/∂w = ${X} × ${v.df.toFixed(1)} = <b>${v.dw.toFixed(1)}</b>; and ∂L/∂b = <b>${v.db.toFixed(1)}</b>. The gradient is ready — take a step.`,
+];
+
+function node(s,x,y,label,val,on,isParam,sens){
+  const fill = isParam ? (on? PALE : '#fff') : (on ? NAVY : '#fff');
+  const tcol = isParam ? NAVY : (on ? '#fff' : GRAY);
+  s.push(`<rect x="${x}" y="${y}" width="106" height="40" rx="4" fill="${fill}" stroke="${on?NAVY:GRAY}" stroke-width="1.4"/>`);
+  s.push(`<text class="svgt" x="${x+53}" y="${y+17}" text-anchor="middle" font-size="12" fill="${tcol}">${label}</text>`);
+  s.push(`<text class="svgt" x="${x+53}" y="${y+33}" text-anchor="middle" font-size="13" font-weight="700" fill="${on?(isParam?NAVY:'#fff'):GRAY}">${on?val:'·'}</text>`);
+  if(sens!==null){
+    s.push(`<text class="svgt" x="${x+53}" y="${y+58}" text-anchor="middle" font-size="12" font-weight="600" fill="${AMB}">∂L/∂ = ${sens}</text>`);
+  }
+}
+function edge(s,x1,y1,x2,y2,on){
+  s.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${on?NAVY:GRAY}" stroke-width="1.4" marker-end="url(#af${on?1:0})"/>`);
+}
+function bedge(s,x1,y1,x2,y2){
+  s.push(`<path d="M ${x1},${y1} C ${(x1+x2)/2},${y1+26} ${(x1+x2)/2},${y2+26} ${x2},${y2}" fill="none" stroke="${AMB}" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ab)"/>`);
+}
+function draw(){
+  const v=vals();
+  const s=[`<defs>
+    <marker id="af1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${NAVY}"/></marker>
+    <marker id="af0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${GRAY}"/></marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${AMB}"/></marker>
+  </defs>`];
+  s.push(`<text class="svgt" x="18" y="24" font-size="13" font-weight="600" fill="${NAVY}">forward →  compute and record</text>`);
+  s.push(`<text class="svgt" x="882" y="322" text-anchor="end" font-size="13" font-weight="600" fill="${AMB}">← backward  chain the sensitivities</text>`);
+  // inputs (always on)
+  node(s, 18, 60, 'w  (parameter)', w.toFixed(1), true, true, phase>=8? v.dw.toFixed(1):null);
+  node(s, 18,130, 'x  (input)', X.toFixed(1), true, true, null);
+  node(s, 18,200, 'b  (parameter)', b.toFixed(1), true, true, phase>=8? v.db.toFixed(1):null);
+  s.push(`<text class="svgt" x="64" y="290" text-anchor="middle" font-size="12" fill="${NAVY}">y (target) = ${Y}</text>`);
+  // computed nodes
+  node(s,190, 95, 'multiply  w·x', v.wx.toFixed(1), phase>=1, false, null);
+  node(s,360,130, 'add  f = wx+b', v.f.toFixed(1), phase>=2, false, phase>=7? v.df.toFixed(1):null);
+  node(s,530,150, 'subtract  e = f−y', v.e.toFixed(1), phase>=3, false, phase>=6? v.de.toFixed(1):null);
+  node(s,700,150, 'square  L = e²', v.L.toFixed(2), phase>=4, false, phase>=5?'1':null);
+  // forward edges
+  edge(s,124, 80,188,108, phase>=1); edge(s,124,150,188,122, phase>=1);
+  edge(s,296,115,358,142, phase>=2); edge(s,124,220,358,158, phase>=2);
+  edge(s,466,150,528,166, phase>=3);
+  s.push(`<text class="svgt" x="500" y="242" font-size="11" fill="${phase>=3?BLUE:GRAY}">y = ${Y} enters here</text>`);
+  edge(s,636,170,698,170, phase>=4);
+  // backward dashed edges
+  if(phase>=6) bedge(s,700,205,636,205);
+  if(phase>=7) bedge(s,530,205,466,192);
+  if(phase>=8){ bedge(s,360,192,124,118); bedge(s,360,196,124,238); }
+  $('g').innerHTML=s.join('');
+  // message
+  const m=$('msg'); m.innerHTML=MSGS[phase](v); m.className=phase>=5?'back':'';
+  // table
+  const rows=[['r0',phase>=1,v.wx.toFixed(1),null,null],
+              ['r1',phase>=2,v.f.toFixed(1),'s1',phase>=7?v.df.toFixed(1):null],
+              ['r2',phase>=3,v.e.toFixed(1),'s2',phase>=6?v.de.toFixed(1):null],
+              ['r3',phase>=4,v.L.toFixed(2),'s3',phase>=5?'1':null],
+              ['r4',true,w.toFixed(1),'s4',phase>=8?v.dw.toFixed(1):null],
+              ['r5',true,b.toFixed(1),'s5',phase>=8?v.db.toFixed(1):null]];
+  const NOW={1:'r0',2:'r1',3:'r2',4:'r3',5:'r3',6:'r2',7:'r1',8:'r4'};
+  rows.forEach(([rid,on,val,sid,sens],i)=>{
+    const tr=$(rid); tr.className = on?'done':'';
+    if(NOW[phase]===rid) tr.className='now';
+    $('v'+i).textContent = on? val : '–';
+    if(sid) $(sid.replace('s','s')).textContent = sens===null? '–' : sens;
+  });
+  if(phase===8 && NOW[8]) $('r5').className='now';
+  $('apply').disabled = phase<8;
+  $('step').disabled = phase>=8;
+  $('hist').textContent = losses.length? ('loss after each gradient step: ' + losses.map(x=>x.toFixed(2)).join('  →  ')) : '';
+}
+function step(){ if(phase<8){ phase++; draw(); } if(phase>=8 && timer){ clearInterval(timer); timer=null; $('auto').textContent='Auto-play'; } }
+$('step').onclick=step;
+$('auto').onclick=function(){
+  if(timer){ clearInterval(timer); timer=null; this.textContent='Auto-play'; return; }
+  if(phase>=8){ phase=0; }
+  this.textContent='Pause'; timer=setInterval(step,1000);
+};
+$('apply').onclick=()=>{
+  const v=vals(); losses.push(v.L);
+  w=Math.round((w-ETA*v.dw)*100)/100; b=Math.round((b-ETA*v.db)*100)/100;
+  $('w').value=w; $('b').value=b; $('wv').textContent=w.toFixed(1); $('bv').textContent=b.toFixed(1);
+  phase=0; draw();
+  $('msg').innerHTML=`<b>Updated:</b> w ← ${w.toFixed(2)}, b ← ${b.toFixed(2)} (each moved against its gradient by η = ${ETA}). Run the passes again and watch the loss shrink.`;
+};
+$('reset').onclick=()=>{ w=2;b=1;phase=0;losses=[]; $('w').value=2;$('b').value=1;$('wv').textContent='2.0';$('bv').textContent='1.0'; draw(); };
+$('w').oninput=e=>{ w=+e.target.value; $('wv').textContent=w.toFixed(1); phase=0; losses=[]; draw(); };
+$('b').oninput=e=>{ b=+e.target.value; $('bv').textContent=b.toFixed(1); phase=0; losses=[]; draw(); };
+draw();
+})();
+</script>
+</body>
+</html>
