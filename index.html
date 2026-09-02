@@ -60,7 +60,6 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
 
 <h2>The program</h2>
 
-<p><a href="slides/training-efficient-llms-program.pptx">Program slides (pptx)</a> · <a href="slides/training-efficient-llms-program.pdf">full pdf</a> — one slide per phase plus one per written chapter; each phase row below links its own slice.</p>
 
 <p>Six months, five phases. Each phase lists what you will do, what you will have built by the end of it, and the materials that support it — book chapters, videos, and references are added here as they are produced.</p>
 
@@ -75,8 +74,6 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
   Intensive training in the fundamentals that everything else stands on: how learning works (loss, gradients, backpropagation), language modeling and tokenization, the transformer as a machine you can count, agentic AI, model evaluation, and synthetic data generation. Weekly hands-on sessions: every concept is implemented small before it is used big.</td>
   <td class="deliv">A shared foundation across the team; working implementations of the core mechanisms (training loop, tokenizer, attention, evaluation harness) written by each engineer.</td>
   <td class="mat">
-    <span class="lbl">Slides</span>
-    <a href="slides/slides-phase1.pdf">phase deck (pdf)</a>
     <span class="lbl">Book</span>
     <a href="pdf/ch01_programs.pdf">Ch. 1 — Programs you don't write</a><br>
     <a href="pdf/ch02_language_modeling.pdf">Ch. 2 — Language modeling</a><br>
@@ -104,8 +101,6 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
   Design and build a reproducible pipeline for producing training data — including synthetic data (instructions, dialogues, reasoning traces) — and for validating its quality: deduplication, quality filtering, factual checks, model-as-judge review, and human sampling. Dataset versioning and traceability from day one.</td>
   <td class="deliv">An operating data pipeline with quality metrics and versioned datasets, ready to feed training.</td>
   <td class="mat">
-    <span class="lbl">Slides</span>
-    <a href="slides/slides-phase2.pdf">phase deck (pdf)</a>
     <span class="lbl">Book</span>
     <span class="soon">Ch. 10 — Data · in progress</span><br>
     <span class="soon">Ch. 25 — Synthetic data · planned</span>
@@ -119,8 +114,6 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
   Build a standardized training pipeline on open models: supervised fine-tuning, LoRA/QLoRA, and alignment (DPO) as the use case requires. Experiment tracking, checkpoints, metric logging, and GPU cost discipline — the pipeline should make the efficient path the default path.</td>
   <td class="deliv">An end-to-end, reproducible fine-tuning pipeline, with at least one model adapted to a pilot domain.</td>
   <td class="mat">
-    <span class="lbl">Slides</span>
-    <a href="slides/slides-phase3.pdf">phase deck (pdf)</a>
     <span class="lbl">Book</span>
     <span class="soon">Ch. 22 — SFT done cheaply · planned</span><br>
     <span class="soon">Ch. 16 — Sequence packing · written, being formatted</span>
@@ -137,8 +130,6 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
   Build the benchmarks that measure what your users actually need — knowledge and reasoning in the domains that matter (regulation, banking, code) — and automate the evaluation: a benchmark harness, per-capability metrics, judge-based evaluation, and reports that are comparable across models and versions.</td>
   <td class="deliv">A benchmark suite per domain and an automated evaluation pipeline that any model can be run through.</td>
   <td class="mat">
-    <span class="lbl">Slides</span>
-    <a href="slides/slides-phase4.pdf">phase deck (pdf)</a>
     <span class="lbl">Book</span>
     <span class="soon">Ch. 9 — How you'll know it's working · planned</span>
     <span class="lbl">Videos</span>
@@ -151,8 +142,6 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
   Close the loop: a pipeline that periodically evaluates the leading open models (Llama, Qwen, Mistral, DeepSeek, Gemma, and whatever ships next) against your benchmark suite and produces a living ranking per use case — weighing capability, inference cost, latency, license, and ease of deployment.</td>
   <td class="deliv">A living model ranking with a dashboard and actionable model-selection guidance, maintained by the team that built it.</td>
   <td class="mat">
-    <span class="lbl">Slides</span>
-    <a href="slides/slides-phase5.pdf">phase deck (pdf)</a>
     <span class="lbl">Book</span>
     <span class="soon">Ch. 7 — Scaling laws for training &amp; inference · planned</span>
     <span class="lbl">Videos</span>
