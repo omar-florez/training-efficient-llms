@@ -20,6 +20,13 @@ p{margin:0 0 16px;max-width:820px}
 p.lead{font-size:18.5px}
 a{color:var(--accent2)}
 a:hover{color:var(--accent)}
+.introrow{display:flex;gap:26px;align-items:stretch;margin:6px 0 10px}
+.introrow .lead{flex:1 1 46%;margin:0}
+.introviz{flex:1 1 54%;min-width:0}
+.introviz iframe{width:100%;height:390px;border:1px solid var(--rule);border-radius:6px;background:#eceae6;display:block}
+.vizcap{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12.5px;color:var(--mute);margin-top:6px}
+.vizcap a{color:var(--accent2)}
+@media (max-width:860px){.introrow{flex-direction:column}.introviz iframe{height:340px}}
 .phase-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:15px}
 .phase-table th{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent2);text-align:left;padding:8px 12px;border-bottom:2px solid var(--accent)}
 .phase-table td{padding:14px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
@@ -52,12 +59,18 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
 <div class="page">
 
 <header class="site">
-  <div class="kicker">Omar U. Florez · omar-florez.github.io</div>
+  <div class="kicker">Omar U. Florez, PhD · omar-florez.github.io</div>
   <h1>Training Efficient LLMs</h1>
   <div class="sub">A six-month path from engineer to someone who trains large language models — efficiently</div>
 </header>
 
-<p class="lead">Most engineers who want to train language models get stuck in the same place: they can fine-tune a model by following a tutorial, but the space between that and <em>running a real training effort</em> — choosing the data, owning the pipelines, measuring what matters, and not wasting the compute budget — looks like a wall. This program is built to take a working engineer over that wall in six months. This covers: data generation and validation, training and fine-tuning, benchmarking, and model selection.</p>
+<div class="introrow">
+  <p class="lead">Most engineers who want to train language models get stuck in the same place: they can fine-tune a model by following a tutorial, but the space between that and <em>running a real training effort</em> — choosing the data, owning the pipelines, measuring what matters, and not wasting the compute budget — looks like a wall. This program is built to take a working engineer over that wall in six months. This covers: data generation and validation, training and fine-tuning, benchmarking, and model selection.</p>
+  <div class="introviz">
+    <iframe src="interactive/hero3d_lego.html" title="Backpropagation in 3D — one training step, brick by brick" loading="lazy"></iframe>
+    <div class="vizcap"><a href="interactive/hero3d_lego.html">Backprop in 3D</a> — words enter, activations climb, the loss fires, gradients descend. Drag inside to orbit; open full-screen ↗</div>
+  </div>
+</div>
 
 
 <h2>The program</h2>
@@ -81,10 +94,18 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
       <li><a href="pdf/ch01_programs.pdf">Ch. 1 — Programs you don't write</a></li>
       <li><a href="pdf/ch02_language_modeling.pdf">Ch. 2 — Language modeling</a></li>
       <li><a href="pdf/ch03_transformer.pdf">Ch. 3 — The transformer, mechanically</a></li>
+      <li><a href="pdf/ch04_training_loop.pdf">Ch. 4 — The training loop and the machine it runs on</a></li>
+      <li><a href="pdf/ch05_lifecycle.pdf">Ch. 5 — The lifecycle of an LLM</a></li>
+      <li><a href="pdf/ch06_costs.pdf">Ch. 6 — Why training is expensive</a></li>
+      <li><a href="pdf/ch08_compute_object.pdf">Ch. 8 — The transformer as a compute object</a></li>
     </ul>
     <span class="lbl">Papers</span>
     <ul>
       <li><a href="https://arxiv.org/pdf/1706.03762">Attention Is All You Need</a> — Vaswani et al., 2017<br><span class="url">arxiv.org/pdf/1706.03762</span></li>
+    </ul>
+    <span class="lbl">Blogs</span>
+    <ul>
+      <li><a href="https://github.com/omar-florez/scratch_mlp">One LEGO at a time: the math of how neural networks learn</a> — backprop from scratch, with code<br><span class="url">github.com/omar-florez/scratch_mlp</span></li>
     </ul>
     <span class="lbl">Interactive</span>
     <ul>
@@ -94,6 +115,7 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
       <li><a href="interactive/param-counter.html">The parameter counter</a></li>
       <li><a href="interactive/rope.html">RoPE: positions as rotations</a></li>
       <li><a href="interactive/attention.html">The attention zoo (MHA · FlashAttention · GQA · MQA · MLA · SWA)</a></li>
+      <li><a href="interactive/hero3d_lego.html">Backprop in 3D — one brick at a time (Three.js)</a></li>
     </ul>
     <span class="lbl">Videos</span>
     <ul>
@@ -119,9 +141,11 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
     <span class="lbl">Book</span>
     <ul>
       <li><span class="soon">Ch. 10 — Data · in progress</span></li>
-      <li><span class="soon">Ch. 25 — Synthetic data · planned</span></li>
+      <li><a href="pdf/ch27_synthetic.pdf">Ch. 27 — Synthetic data</a></li>
     </ul>
     <span class="lbl">Papers</span>
+    <ul><li><span class="soon">coming soon</span></li></ul>
+    <span class="lbl">Blogs</span>
     <ul><li><span class="soon">coming soon</span></li></ul>
     <span class="lbl">Videos</span>
     <ul><li><span class="soon">coming soon</span></li></ul>
@@ -135,15 +159,21 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
   <td class="mat">
     <span class="lbl">Book</span>
     <ul>
-      <li><span class="soon">Ch. 22 — SFT done cheaply · planned</span></li>
-      <li><span class="soon">Ch. 16 — Sequence packing · written, being formatted</span></li>
+      <li><span class="soon">Ch. 23 — SFT done cheaply · planned</span></li>
+      <li><a href="pdf/ch16_packing.pdf">Ch. 16 — Sequence packing</a></li>
     </ul>
     <span class="lbl">Written &amp; live</span>
     <ul>
       <li><a href="pdf/ch13_attention.pdf">Ch. 13 — Making attention cheap</a></li>
+      <li><a href="pdf/ch14_parallelism.pdf">Ch. 14 — Distributing the model</a></li>
+      <li><a href="pdf/ch21_context.pdf">Ch. 21 — Extending context</a></li>
+      <li><a href="pdf/ch25_rl_reasoning.pdf">Ch. 25 — RL for reasoning (GRPO · veRL)</a></li>
+      <li><a href="pdf/ch26_distillation.pdf">Ch. 26 — Distillation</a></li>
       <li><a href="interactive/attention.html">The attention zoo</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch13_attention.ipynb">Ch. 13 lab ▸</a></li>
     </ul>
     <span class="lbl">Papers</span>
+    <ul><li><span class="soon">coming soon</span></li></ul>
+    <span class="lbl">Blogs</span>
     <ul><li><span class="soon">coming soon</span></li></ul>
     <span class="lbl">Videos</span>
     <ul><li><span class="soon">coming soon</span></li></ul>
@@ -156,8 +186,13 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
   <td class="deliv">A benchmark suite per domain and an automated evaluation pipeline that any model can be run through.</td>
   <td class="mat">
     <span class="lbl">Book</span>
-    <ul><li><span class="soon">Ch. 9 — How you'll know it's working · planned</span></li></ul>
+    <ul>
+      <li><a href="pdf/ch28_safety.pdf">Ch. 28 — Safety, refusals, and calibration</a></li>
+      <li><span class="soon">Ch. 9 — How you'll know it's working · planned</span></li>
+    </ul>
     <span class="lbl">Papers</span>
+    <ul><li><span class="soon">coming soon</span></li></ul>
+    <span class="lbl">Blogs</span>
     <ul><li><span class="soon">coming soon</span></li></ul>
     <span class="lbl">Videos</span>
     <ul><li><span class="soon">coming soon</span></li></ul>
@@ -170,8 +205,10 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
   <td class="deliv">A living model ranking with a dashboard and actionable model-selection guidance, maintained by the team that built it.</td>
   <td class="mat">
     <span class="lbl">Book</span>
-    <ul><li><span class="soon">Ch. 7 — Scaling laws for training &amp; inference · planned</span></li></ul>
+    <ul><li><a href="pdf/ch07_scaling.pdf">Ch. 7 — Scaling laws for training &amp; inference</a></li></ul>
     <span class="lbl">Papers</span>
+    <ul><li><span class="soon">coming soon</span></li></ul>
+    <span class="lbl">Blogs</span>
     <ul><li><span class="soon">coming soon</span></li></ul>
     <span class="lbl">Videos</span>
     <ul><li><span class="soon">coming soon</span></li></ul>
@@ -180,7 +217,7 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
 </tbody>
 </table>
 
-<div class="note">Materials on this page grow as the program runs: each phase gains book chapters, papers, session videos, and lab notebooks. If a link says <em>coming soon</em>, it is being written or recorded.</div>
+<div class="note">Materials on this page grow as the program runs: each phase gains book chapters, papers, blogs, session videos, and lab notebooks. If a link says <em>coming soon</em>, it is being written or recorded.</div>
 
 
 <footer>
