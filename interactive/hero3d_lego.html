@@ -34,9 +34,11 @@ canvas{display:block}
   .ann{font-size:14px}.ann sub{font-size:9px}
   .ann.small{font-size:13px}.ann.loss{font-size:15px}
   .ann.streamlbl{font-size:12px}
+  .ann.feq{display:none}
   .word{font-size:11.5px;padding:2px 5px}
-  .kicker{font-size:10px;left:12px;top:10px}
-  .losshead{transform:translateX(-50%) scale(.62);transform-origin:top center}
+  .kicker{font-size:10px;left:12px;top:8px}
+  .losshead{top:30px;transform:translateX(-50%) scale(.66);transform-origin:top center}
+  .losseq{margin-top:30px}
 }
 .legend{position:absolute;left:22px;bottom:16px;font-family:system-ui,sans-serif;font-size:14px;color:var(--mute);max-width:520px}
 .legend b{color:var(--accent)}
@@ -157,10 +159,10 @@ const A=(html,cls)=>{const d=document.createElement('div');d.className='ann '+cl
 const fr=(a,b)=>`<span class="frac"><span>${a}</span><span>${b}</span></span>`;
 const N=(x,y,z)=>new THREE.Vector3(x,y,z);
 const anns=[
- {p:N(-FW/2-1.7, yOf.h2+ .95, 0), n:N(-1,0,.3), el:A('h<sub>2</sub> = sigmoid(z<sub>2</sub>)','right')},
- {p:N(-FW/2-1.7, yOf.h2+ .35, 0), n:N(-1,0,.3), el:A('z<sub>2</sub> = h<sub>1</sub>W<sub>2</sub>','right')},
- {p:N(-FW/2-1.7, yOf.h1+ .15, 0), n:N(-1,0,.3), el:A('h<sub>1</sub> = sigmoid(z<sub>1</sub>)','right')},
- {p:N(-FW/2-1.7, yOf.X + .22, 0), n:N(-1,0,.3), el:A('z<sub>1</sub> = XW<sub>1</sub>','right')},
+ {p:N(-FW/2-1.7, yOf.h2+ .95, 0), n:N(-1,0,.3), el:A('h<sub>2</sub> = sigmoid(z<sub>2</sub>)','right feq')},
+ {p:N(-FW/2-1.7, yOf.h2+ .35, 0), n:N(-1,0,.3), el:A('z<sub>2</sub> = h<sub>1</sub>W<sub>2</sub>','right feq')},
+ {p:N(-FW/2-1.7, yOf.h1+ .15, 0), n:N(-1,0,.3), el:A('h<sub>1</sub> = sigmoid(z<sub>1</sub>)','right feq')},
+ {p:N(-FW/2-1.7, yOf.X + .22, 0), n:N(-1,0,.3), el:A('z<sub>1</sub> = XW<sub>1</sub>','right feq')},
  {p:N(-FW/2-.5, yOf.h2, 0), n:N(-1,0,.3), el:A('h<sub>2</sub> →','right blue')},
  {p:N(-FW/2-.5, yOf.W2, 0), n:N(-1,0,.3), el:A('W<sub>2</sub> →','right blue')},
  {p:N(-FW/2-.5, yOf.h1, 0), n:N(-1,0,.3), el:A('h<sub>1</sub> →','right blue')},
@@ -175,6 +177,7 @@ const anns=[
 ];
 anns[anns.length-2].el.style.color='#3f74b8';
 anns[anns.length-1].el.style.color='#c23a2b';
+if(innerWidth<820){ [9,10,11,12].forEach(i=>{anns[i].p.x-=.55;}); }  // compact: pull the gradient column inward
 const lossEl=document.getElementById('losseq');
 
 // ---- input words flying into X ----
@@ -211,9 +214,9 @@ const nextLoss=()=>0.45*Math.exp(-0.13*lossStep)*(1+0.05*Math.sin(lossStep*2.7))
 renderer.setAnimationLoop(t=>{
   t/=1000;
   smx+=(mx-smx)*.05; smy+=(my-smy)*.05;
-  const th=baseTh+Math.sin(t*.11)*.85+smx*.25+dragTh;   // wide sweep: see the 3D
+  const th=baseTh+Math.sin(t*.11)*(innerWidth<820?.45:.85)+smx*.25+dragTh;   // narrower sweep in embeds
   const phi=1.12+smy*.10+dragPhi;
-  const R=innerWidth<820?18.6:13.8;
+  const R=innerWidth<820?19.4:13.8;
   cam.position.set(target.x+R*Math.sin(phi)*Math.sin(th), target.y+R*Math.cos(phi), target.z+R*Math.sin(phi)*Math.cos(th));
   cam.lookAt(target);
 
