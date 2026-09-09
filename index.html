@@ -23,7 +23,7 @@ a:hover{color:var(--accent)}
 .introrow{display:flex;gap:26px;align-items:stretch;margin:6px 0 10px}
 .introrow .lead{flex:1 1 46%;margin:0}
 .introviz{flex:1 1 54%;min-width:0}
-.introviz iframe{width:100%;height:390px;border:1px solid var(--rule);border-radius:6px;background:#eceae6;display:block}
+.introviz iframe{width:100%;height:390px;border:1px solid var(--rule);border-radius:6px;background:var(--bg);display:block}
 .vizcap{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12.5px;color:var(--mute);margin-top:6px}
 .vizcap a{color:var(--accent2)}
 @media (max-width:860px){.introrow{flex-direction:column}.introviz iframe{height:340px}}
@@ -68,7 +68,7 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
   <p class="lead">Most engineers who want to train language models get stuck in the same place: they can fine-tune a model by following a tutorial, but the space between that and <em>running a real training effort</em> — choosing the data, owning the pipelines, measuring what matters, and not wasting the compute budget — looks like a wall. This program is built to take a working engineer over that wall in six months. This covers: data generation and validation, training and fine-tuning, benchmarking, and model selection.</p>
   <div class="introviz">
     <iframe src="interactive/hero3d_lego.html" title="Words enter, activations climb, the loss fires, gradients descend." loading="lazy"></iframe>
-    <div class="vizcap"><a href="interactive/hero3d_lego.html">Words enter, activations climb, the loss fires, gradients descend.</a> Drag inside to orbit; open full-screen ↗</div>
+    <div class="vizcap"><a href="interactive/hero3d_lego.html">Words enter, activations climb, the loss fires, gradients descend.</a></div>
   </div>
 </div>
 
