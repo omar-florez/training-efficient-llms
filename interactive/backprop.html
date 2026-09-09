@@ -8,7 +8,7 @@
 :root{--ink:#1a1a1a;--mute:#5c5c5c;--mid:#a3a3a3;--rule:#d9d9d9;--soft:#f2f5f9;--bg:#fdfdfb;--accent:#17406b;--accent2:#3f74b8;--hl:#b45309}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-size:17px;line-height:1.6}
-.page{max-width:920px;margin:0 auto;padding:40px 24px 80px}
+.page{max-width:1240px;margin:0 auto;padding:40px 24px 80px}
 .kicker{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}
 h1{font-size:30px;margin:6px 0 4px;color:var(--accent);letter-spacing:-.01em;border-bottom:2px solid var(--accent);padding-bottom:12px}
 p{margin:0 0 14px;max-width:860px}
@@ -35,6 +35,19 @@ td.sens{color:var(--hl);font-weight:600}
 footer{margin-top:36px;border-top:1px solid var(--rule);padding-top:12px;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13.5px;color:var(--mute)}
 footer a{color:var(--accent2)}
 .note{font-size:14.5px;color:var(--mute)}
+.row{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.row svg{flex:1 1 520px;min-width:0}
+#eqs{flex:0 0 320px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;border:1px solid var(--rule);border-radius:6px;background:#fff;padding:10px 0;align-self:stretch}
+#eqs h4{margin:2px 14px 6px;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent2)}
+#eqs h4.bk{color:var(--hl);margin-top:12px;border-top:1px dotted var(--rule);padding-top:10px}
+.eq{padding:5px 14px 5px 11px;border-left:3px solid transparent;color:var(--mid);line-height:1.5}
+.eq .num{display:block;padding-left:0;color:inherit}
+.eq.done{color:var(--ink)}
+.eq.done .num{color:var(--accent)}
+.eq.done.bk .num{color:var(--hl)}
+.eq.now{background:#fdf3e7;border-left-color:var(--hl);color:var(--ink)}
+.eq.now .num{color:var(--hl);font-weight:700}
+@media (max-width:900px){#eqs{flex:1 1 100%}}
 </style>
 </head>
 <body>
@@ -54,7 +67,10 @@ footer a{color:var(--accent2)}
     <button class="sec" id="reset">Reset</button>
   </div>
   <div id="msg">Press <b>Step</b> to begin the forward pass.</div>
-  <svg id="g" viewBox="0 0 900 340" aria-label="Computation graph: inputs feed multiply, add, subtract, square nodes producing the loss; forward values appear left to right, backward sensitivities right to left"></svg>
+  <div class="row">
+    <svg id="g" viewBox="0 0 900 340" aria-label="Computation graph: inputs feed multiply, add, subtract, square nodes producing the loss; forward values appear left to right, backward sensitivities right to left"></svg>
+    <div id="eqs" aria-label="The forward and backward equations, expanded with the current values; the active line is highlighted as the diagram updates"></div>
+  </div>
 
   <table id="trace">
     <thead><tr><th>Node</th><th>Forward value</th><th>Backward: local rule</th><th>Sensitivity ∂L/∂·</th></tr></thead>
@@ -146,6 +162,27 @@ function draw(){
   if(phase>=7) bedge(s,530,205,466,192);
   if(phase>=8){ bedge(s,360,192,124,118); bedge(s,360,196,124,238); }
   $('g').innerHTML=s.join('');
+  // equation panel: symbolic chain, then where each value comes from
+  const F=x=> x<0? '('+x.toFixed(1)+')' : x.toFixed(1);
+  const EQ=[
+   [1,0,'wx = w · x',                     `= ${w.toFixed(1)} × ${X} = ${v.wx.toFixed(1)}`],
+   [2,0,'f&nbsp; = wx + b',               `= ${v.wx.toFixed(1)} + ${b.toFixed(1)} = ${v.f.toFixed(1)}`],
+   [3,0,'e&nbsp; = f − y',                `= ${v.f.toFixed(1)} − ${Y} = ${v.e.toFixed(1)}`],
+   [4,0,'L&nbsp; = e²',                   `= ${F(v.e)}² = ${v.L.toFixed(2)}`],
+   [5,1,'∂L/∂L',                          `= 1`],
+   [6,1,'∂L/∂e = ∂L/∂L · <u>2e</u>',      `= 1 × 2 × ${F(v.e)} = ${v.de.toFixed(1)}`],
+   [7,1,'∂L/∂f = ∂L/∂e · <u>∂e/∂f</u>',   `= ${F(v.de)} × 1 = ${v.df.toFixed(1)}`],
+   [8,1,'∂L/∂w = ∂L/∂f · <u>∂f/∂w</u>',   `= ${X} × ${F(v.df)} = ${v.dw.toFixed(1)}`],
+   [8,1,'∂L/∂b = ∂L/∂f · <u>∂f/∂b</u>',   `= 1 × ${F(v.df)} = ${v.db.toFixed(1)}`],
+  ];
+  let eh='<h4>forward — compute &amp; record</h4>';
+  EQ.forEach(([ph,bk,sym,num],i)=>{
+    if(i===4) eh+='<h4 class="bk">backward — chain rule, one link per line</h4>';
+    const on = phase>=ph;
+    const now = phase===ph;
+    eh+=`<div class="eq${on?' done':''}${now?' now':''}${bk?' bk':''}">${sym}<span class="num">${on? num : '= ·'}</span></div>`;
+  });
+  $('eqs').innerHTML=eh;
   // message
   const m=$('msg'); m.innerHTML=MSGS[phase](v); m.className=phase>=5?'back':'';
   // table
