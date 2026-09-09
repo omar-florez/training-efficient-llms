@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Forward & Backward, Step by Step · Training Efficient LLMs</title>
+<title>Backpropagation, Step by Step · Training Efficient LLMs</title>
 <style>
 :root{--ink:#1a1a1a;--mute:#5c5c5c;--mid:#a3a3a3;--rule:#d9d9d9;--soft:#f2f5f9;--bg:#fdfdfb;--accent:#17406b;--accent2:#3f74b8;--hl:#b45309}
 *{box-sizing:border-box}
@@ -36,12 +36,15 @@ footer{margin-top:36px;border-top:1px solid var(--rule);padding-top:12px;font-fa
 footer a{color:var(--accent2)}
 .note{font-size:14.5px;color:var(--mute)}
 .row{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
-.row svg{flex:1 1 520px;min-width:0}
-#eqs{flex:0 0 320px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;border:1px solid var(--rule);border-radius:6px;background:#fff;padding:10px 0;align-self:stretch}
+.row svg{flex:1 1 500px;min-width:0}
+#eqs{flex:0 0 340px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;border:1px solid var(--rule);border-radius:6px;background:#fff;padding:10px 0;align-self:stretch}
 #eqs h4{margin:2px 14px 6px;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent2)}
 #eqs h4.bk{color:var(--hl);margin-top:12px;border-top:1px dotted var(--rule);padding-top:10px}
 .eq{padding:5px 14px 5px 11px;border-left:3px solid transparent;color:var(--mid);line-height:1.5}
 .eq .num{display:block;padding-left:0;color:inherit}
+.eq .num.mid{color:inherit;font-weight:400}
+.eq.done .num.mid{color:var(--ink)}
+.eq.now .num.mid{color:var(--ink);font-weight:400}
 .eq.done{color:var(--ink)}
 .eq.done .num{color:var(--accent)}
 .eq.done.bk .num{color:var(--hl)}
@@ -52,85 +55,86 @@ footer a{color:var(--accent2)}
 </head>
 <body>
 <div class="page">
-<div class="kicker">Training Efficient LLMs · Interactive · Chapter 1</div>
-<h1>Forward &amp; backward, step by step</h1>
+<div class="kicker">Omar U. Florez, PhD · Training Efficient LLMs · Interactive</div>
+<h1>Backpropagation, step by step</h1>
 
-<p>This is Figure 1.3 from Chapter 1, made walkable. The model is <span class="mono">f = w·x + b</span> with input <span class="mono">x = 2</span> and target <span class="mono">y = 7</span>; the loss is <span class="mono">L = (f − y)²</span>. Press <b>Step</b> and watch the <b>forward pass</b> compute and record each value left to right — then keep pressing and watch the <b>backward pass</b> carry the sensitivity <span class="mono">∂L/∂·</span> right to left, multiplying in one local derivative per node. When both gradients arrive, take a <b>gradient step</b> and see the loss fall. Then move the sliders and run it again from anywhere.</p>
+<p>A two-layer network with the standard symbols: input <span class="mono">x</span>, weights <span class="mono">W₁, W₂</span>, logits <span class="mono">z = W·input</span>, sigmoid activations <span class="mono">h = σ(z)</span>, prediction <span class="mono">ŷ</span>, and an <b>MSE loss</b> <span class="mono">L = ½(ŷ − y)²</span>. Press <b>Step</b>: the <b>forward pass</b> computes and records each value left to right; the <b>backward pass</b> then walks right to left, and at every weight layer it pays <em>two</em> gradients — <span class="mono">∂L/∂W</span> for the update and <span class="mono">∂L/∂x</span> (the input side) to keep the chain moving. When both <span class="mono">∂L/∂W</span> arrive, take an <b>SGD step</b> <span class="mono">W ← W − α·∂L/∂W</span> and watch the loss fall.</p>
 
 <div class="panel">
   <div class="controls">
-    <label>w <input type="range" id="w" min="-1" max="5" step="0.1" value="2"><span class="mono" id="wv" style="color:var(--accent);min-width:34px">2.0</span></label>
-    <label>b <input type="range" id="b" min="-2" max="4" step="0.1" value="1"><span class="mono" id="bv" style="color:var(--accent);min-width:34px">1.0</span></label>
+    <label>W₁ <input type="range" id="t1" min="-2" max="2" step="0.1" value="0.5"><span class="mono" id="t1v" style="color:var(--accent);min-width:40px">0.50</span></label>
+    <label>W₂ <input type="range" id="t2" min="-2" max="2" step="0.1" value="0.8"><span class="mono" id="t2v" style="color:var(--accent);min-width:40px">0.80</span></label>
     <button id="step">Step ▸</button>
     <button class="sec" id="auto">Auto-play</button>
-    <button class="amb" id="apply" disabled>Gradient step (η = 0.1)</button>
+    <button class="amb" id="apply" disabled>SGD step (α = 2)</button>
     <button class="sec" id="reset">Reset</button>
   </div>
   <div id="msg">Press <b>Step</b> to begin the forward pass.</div>
   <div class="row">
-    <svg id="g" viewBox="0 0 900 340" aria-label="Computation graph: inputs feed multiply, add, subtract, square nodes producing the loss; forward values appear left to right, backward sensitivities right to left"></svg>
-    <div id="eqs" aria-label="The forward and backward equations, expanded with the current values; the active line is highlighted as the diagram updates"></div>
+    <svg id="g" viewBox="0 0 880 345" aria-label="Two-layer network as a chain: x through theta-1 to logit z1, sigmoid h1, theta-2 to logit z2, sigmoid prediction y-hat, MSE loss; forward values fill left to right, backward sensitivities flow right to left, with dL/dtheta and dL/dx split at each weight layer"></svg>
+    <div id="eqs" aria-label="Forward and backward equations expanded with current values; the active line highlights in sync with the diagram"></div>
   </div>
-
-  <table id="trace">
-    <thead><tr><th>Node</th><th>Forward value</th><th>Backward: local rule</th><th>Sensitivity ∂L/∂·</th></tr></thead>
-    <tbody>
-      <tr id="r0"><td>w·x</td><td id="v0">–</td><td>product of the inputs</td><td>–</td></tr>
-      <tr id="r1"><td>f = wx + b</td><td id="v1">–</td><td>the subtraction passes ∂L/∂e through</td><td id="s1">–</td></tr>
-      <tr id="r2"><td>e = f − y</td><td id="v2">–</td><td>through the square: ∂L/∂e = 2e</td><td id="s2">–</td></tr>
-      <tr id="r3"><td>L = e²</td><td id="v3">–</td><td>start of the walk: ∂L/∂L = 1</td><td id="s3">–</td></tr>
-      <tr id="r4"><td>w</td><td id="v4">–</td><td>nudge w → f moves by x, so multiply by x</td><td id="s4" class="sens">–</td></tr>
-      <tr id="r5"><td>b</td><td id="v5">–</td><td>nudge b → f moves by 1</td><td id="s5" class="sens">–</td></tr>
-    </tbody>
-  </table>
   <div class="note" id="hist"></div>
 </div>
 
-<p class="note">Two facts to notice while you play. The backward pass visits each node about as often as the forward did — that is why the full gradient costs roughly two extra forward passes, for two parameters or seven billion. And the forward values (blue) must be <em>kept</em> until backward consumes them: at scale, those stored activations — not the weights — are what fill a training GPU (Chapters 1.3 and 15).</p>
+<p class="note">Two facts to notice while you play. Every backward line reuses a <em>stored</em> forward value (h₁, ŷ, x…) — that is why activations must be kept until backward consumes them, and why at scale they, not the weights, fill a training GPU. And each weight layer pays two gradients of equal size — <span class="mono">∂L/∂W</span> and <span class="mono">∂L/∂x</span> — which is exactly why the backward pass costs about twice the forward (Chapter 8).</p>
 
-<footer><a href="../pdf/ch01_programs.pdf">Chapter 1 — Programs you don't write</a> · More: <a href="gradient-descent.html">gradient-descent playground</a> · <a href="../index.html">Training Efficient LLMs</a></footer>
+<footer>Built by <b>Omar U. Florez, PhD</b> · part of <a href="../index.html">Efficient Training of LLMs</a> &nbsp;·&nbsp; <a href="../pdf/ch01_programs.pdf">Chapter 1 — Programs you don't write</a> · More: <a href="gradient-descent.html">gradient-descent playground</a></footer>
 </div>
 
 <script>
 (function(){
 const $=id=>document.getElementById(id);
 const NAVY='#17406b', BLUE='#3f74b8', LT='#9dbfe4', PALE='#dbe7f6', AMB='#b45309', GRAY='#c9d4e2';
-const X=2, Y=7, ETA=0.1;
-let w=2, b=1, phase=0, timer=null, losses=[];
-// phases: 0 idle, 1 wx, 2 f, 3 e, 4 L, 5 dL, 6 de, 7 df, 8 dwdb(done)
+const X=2.0, Y=0.9, ALPHA=2.0;
+let t1=0.5, t2=0.8, phase=0, timer=null, losses=[];
+const LAST=12;
+// phases: 0 idle | forward: 1 z1, 2 h1, 3 z2, 4 yhat, 5 L
+// backward: 6 dyhat, 7 dz2, 8 dtheta2, 9 dh1, 10 dz1, 11 dtheta1, 12 dx (done)
 
+const sig=z=>1/(1+Math.exp(-z));
 function vals(){
-  const wx=w*X, f=wx+b, e=f-Y, L=e*e;
-  const dL=1, de=2*e, df=de, dw=df*X, db=df;
-  return {wx,f,e,L,dL,de,df,dw,db};
+  const z1=t1*X, h1=sig(z1), z2=t2*h1, yh=sig(z2), L=0.5*(yh-Y)*(yh-Y);
+  const dyh=yh-Y;
+  const s2=yh*(1-yh), dz2=dyh*s2, dt2=h1*dz2, dh1=t2*dz2;
+  const s1=h1*(1-h1), dz1=dh1*s1, dt1=X*dz1, dx=t1*dz1;
+  return {z1,h1,z2,yh,L,dyh,s2,dz2,dt2,dh1,s1,dz1,dt1,dx};
 }
+const f3=x=>x.toFixed(3), f4=x=>x.toFixed(4);
+const P=x=> x<0? '('+f3(x)+')' : f3(x);
+const P4=x=> x<0? '('+f4(x)+')' : f4(x);
+
 const MSGS=[
- ()=>'Press <b>Step</b> to begin the forward pass.',
- v=>`<b>Forward 1/4:</b> multiply — w·x = ${w.toFixed(1)} × ${X} = <b>${v.wx.toFixed(1)}</b>. Computed and <i>recorded</i>.`,
- v=>`<b>Forward 2/4:</b> add — f = wx + b = ${v.wx.toFixed(1)} + ${b.toFixed(1)} = <b>${v.f.toFixed(1)}</b>. The model's prediction.`,
- v=>`<b>Forward 3/4:</b> subtract — e = f − y = ${v.f.toFixed(1)} − ${Y} = <b>${v.e.toFixed(1)}</b>. How wrong we are.`,
- v=>`<b>Forward 4/4:</b> square — L = e² = <b>${v.L.toFixed(2)}</b>. One number; the forward pass is done and every intermediate is stored.`,
- v=>`<b>Backward 1/4:</b> at the loss itself, ∂L/∂L = <b>1</b>. The walk starts here and heads left.`,
- v=>`<b>Backward 2/4:</b> through the square — ∂L/∂e = 2e = <b>${v.de.toFixed(1)}</b>. Note it needed the <i>stored</i> forward value e = ${v.e.toFixed(1)}.`,
- v=>`<b>Backward 3/4:</b> the subtraction passes it through unchanged — ∂L/∂f = <b>${v.df.toFixed(1)}</b>.`,
- v=>`<b>Backward 4/4:</b> into the parameters. A unit nudge of w moves f by x = ${X}, so ∂L/∂w = ${X} × ${v.df.toFixed(1)} = <b>${v.dw.toFixed(1)}</b>; and ∂L/∂b = <b>${v.db.toFixed(1)}</b>. The gradient is ready — take a step.`,
+ v=>'Press <b>Step</b> to begin the forward pass.',
+ v=>`<b>Forward 1/5:</b> layer-1 logit — z₁ = W₁·x = ${f3(t1)} × ${f3(X)} = <b>${f3(v.z1)}</b>. Computed and <i>recorded</i>.`,
+ v=>`<b>Forward 2/5:</b> activation — h₁ = σ(z₁) = <b>${f3(v.h1)}</b>. The sigmoid squashes the logit into (0, 1).`,
+ v=>`<b>Forward 3/5:</b> layer-2 logit — z₂ = W₂·h₁ = ${f3(t2)} × ${f3(v.h1)} = <b>${f3(v.z2)}</b>.`,
+ v=>`<b>Forward 4/5:</b> prediction — ŷ = σ(z₂) = <b>${f3(v.yh)}</b>. Target: y = ${Y}.`,
+ v=>`<b>Forward 5/5:</b> the loss is <b>MSE</b> — L = ½(ŷ − y)² = <b>${f4(v.L)}</b>. Every intermediate (x, z₁, h₁, z₂, ŷ) is stored for backward.`,
+ v=>`<b>Backward 1/7:</b> MSE differentiates cleanly — ∂L/∂ŷ = ŷ − y = <b>${f3(v.dyh)}</b>. The walk starts here and heads left.`,
+ v=>`<b>Backward 2/7:</b> through the sigmoid — σ′(z₂) = ŷ(1−ŷ) = ${f3(v.s2)}, so ∂L/∂z₂ = ${P(v.dyh)} × ${f3(v.s2)} = <b>${f4(v.dz2)}</b>. It needed the <i>stored</i> ŷ.`,
+ v=>`<b>Backward 3/7:</b> first debt at layer 2 — the weight: ∂L/∂W₂ = h₁ · ∂L/∂z₂ = <b>${f4(v.dt2)}</b>. This goes to the optimizer.`,
+ v=>`<b>Backward 4/7:</b> second debt — the input side: ∂L/∂h₁ = W₂ · ∂L/∂z₂ = <b>${f4(v.dh1)}</b>. This keeps the chain moving left.`,
+ v=>`<b>Backward 5/7:</b> through the first sigmoid — ∂L/∂z₁ = ∂L/∂h₁ · h₁(1−h₁) = <b>${f4(v.dz1)}</b>.`,
+ v=>`<b>Backward 6/7:</b> layer 1's weight debt — ∂L/∂W₁ = x · ∂L/∂z₁ = <b>${f4(v.dt1)}</b>.`,
+ v=>`<b>Backward 7/7:</b> and its input debt — ∂L/∂x = W₁ · ∂L/∂z₁ = <b>${f4(v.dx)}</b> (unused here, but in a deep net this <i>is</i> the next layer down's ∂L/∂ŷ). Both gradients are ready — take an <b>SGD step</b>.`,
 ];
 
-function node(s,x,y,label,val,on,isParam,sens){
+function node(s,x,y,label,val,on,isParam,sens,sensLbl){
   const fill = isParam ? (on? PALE : '#fff') : (on ? NAVY : '#fff');
   const tcol = isParam ? NAVY : (on ? '#fff' : GRAY);
-  s.push(`<rect x="${x}" y="${y}" width="106" height="40" rx="4" fill="${fill}" stroke="${on?NAVY:GRAY}" stroke-width="1.4"/>`);
-  s.push(`<text class="svgt" x="${x+53}" y="${y+17}" text-anchor="middle" font-size="12" fill="${tcol}">${label}</text>`);
-  s.push(`<text class="svgt" x="${x+53}" y="${y+33}" text-anchor="middle" font-size="13" font-weight="700" fill="${on?(isParam?NAVY:'#fff'):GRAY}">${on?val:'·'}</text>`);
+  s.push(`<rect x="${x}" y="${y}" width="104" height="42" rx="4" fill="${fill}" stroke="${on?NAVY:GRAY}" stroke-width="1.4"/>`);
+  s.push(`<text class="svgt" x="${x+52}" y="${y+17}" text-anchor="middle" font-size="12" fill="${tcol}">${label}</text>`);
+  s.push(`<text class="svgt" x="${x+52}" y="${y+34}" text-anchor="middle" font-size="13" font-weight="700" fill="${on?(isParam?NAVY:'#fff'):GRAY}">${on?val:'·'}</text>`);
   if(sens!==null){
-    s.push(`<text class="svgt" x="${x+53}" y="${y+58}" text-anchor="middle" font-size="12" font-weight="600" fill="${AMB}">∂L/∂ = ${sens}</text>`);
+    s.push(`<text class="svgt" x="${x+52}" y="${y+60}" text-anchor="middle" font-size="12" font-weight="600" fill="${AMB}">${sensLbl} = ${sens}</text>`);
   }
 }
 function edge(s,x1,y1,x2,y2,on){
   s.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${on?NAVY:GRAY}" stroke-width="1.4" marker-end="url(#af${on?1:0})"/>`);
 }
 function bedge(s,x1,y1,x2,y2){
-  s.push(`<path d="M ${x1},${y1} C ${(x1+x2)/2},${y1+26} ${(x1+x2)/2},${y2+26} ${x2},${y2}" fill="none" stroke="${AMB}" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ab)"/>`);
+  s.push(`<path d="M ${x1},${y1} C ${(x1+x2)/2},${y1+24} ${(x1+x2)/2},${y2+24} ${x2},${y2}" fill="none" stroke="${AMB}" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ab)"/>`);
 }
 function draw(){
   const v=vals();
@@ -140,87 +144,94 @@ function draw(){
     <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${AMB}"/></marker>
   </defs>`];
   s.push(`<text class="svgt" x="18" y="24" font-size="13" font-weight="600" fill="${NAVY}">forward →  compute and record</text>`);
-  s.push(`<text class="svgt" x="882" y="322" text-anchor="end" font-size="13" font-weight="600" fill="${AMB}">← backward  chain the sensitivities</text>`);
-  // inputs (always on)
-  node(s, 18, 60, 'w  (parameter)', w.toFixed(1), true, true, phase>=8? v.dw.toFixed(1):null);
-  node(s, 18,130, 'x  (input)', X.toFixed(1), true, true, null);
-  node(s, 18,200, 'b  (parameter)', b.toFixed(1), true, true, phase>=8? v.db.toFixed(1):null);
-  s.push(`<text class="svgt" x="64" y="290" text-anchor="middle" font-size="12" fill="${NAVY}">y (target) = ${Y}</text>`);
-  // computed nodes
-  node(s,190, 95, 'multiply  w·x', v.wx.toFixed(1), phase>=1, false, null);
-  node(s,360,130, 'add  f = wx+b', v.f.toFixed(1), phase>=2, false, phase>=7? v.df.toFixed(1):null);
-  node(s,530,150, 'subtract  e = f−y', v.e.toFixed(1), phase>=3, false, phase>=6? v.de.toFixed(1):null);
-  node(s,700,150, 'square  L = e²', v.L.toFixed(2), phase>=4, false, phase>=5?'1':null);
-  // forward edges
-  edge(s,124, 80,188,108, phase>=1); edge(s,124,150,188,122, phase>=1);
-  edge(s,296,115,358,142, phase>=2); edge(s,124,220,358,158, phase>=2);
-  edge(s,466,150,528,166, phase>=3);
-  s.push(`<text class="svgt" x="500" y="242" font-size="11" fill="${phase>=3?BLUE:GRAY}">y = ${Y} enters here</text>`);
-  edge(s,636,170,698,170, phase>=4);
+  s.push(`<text class="svgt" x="862" y="338" text-anchor="end" font-size="13" font-weight="600" fill="${AMB}">← backward  chain the sensitivities</text>`);
+  // main chain, y=110
+  node(s, 16,110,'x  (input)', f3(X), true, true, phase>=12? f4(v.dx):null, '∂L/∂x');
+  node(s,160,110,'logit  z₁ = W₁·x', f3(v.z1), phase>=1, false, phase>=10? f4(v.dz1):null, '∂L/∂z₁');
+  node(s,304,110,'h₁ = σ(z₁)', f3(v.h1), phase>=2, false, phase>=9? f4(v.dh1):null, '∂L/∂h₁');
+  node(s,448,110,'logit  z₂ = W₂·h₁', f3(v.z2), phase>=3, false, phase>=7? f4(v.dz2):null, '∂L/∂z₂');
+  node(s,592,110,'ŷ = σ(z₂)', f3(v.yh), phase>=4, false, phase>=6? f3(v.dyh):null, '∂L/∂ŷ');
+  node(s,736,110,'L = ½(ŷ−y)²', f4(v.L), phase>=5, false, phase>=6?'1':null, '∂L/∂L');
+  // params, y=230
+  node(s, 88,230,'W₁  (weight)', f3(t1), true, true, phase>=11? f4(v.dt1):null, '∂L/∂W₁');
+  node(s,376,230,'W₂  (weight)', f3(t2), true, true, phase>=8? f4(v.dt2):null, '∂L/∂W₂');
+  s.push(`<text class="svgt" x="700" y="252" text-anchor="middle" font-size="12" fill="${phase>=5?NAVY:GRAY}">y (target) = ${Y}</text>`);
+  s.push(`<line x1="700" y1="236" x2="770" y2="156" stroke="${phase>=5?NAVY:GRAY}" stroke-width="1.4" marker-end="url(#af${phase>=5?1:0})"/>`);
+  // forward edges along the chain
+  edge(s,120,131,158,131, phase>=1);
+  edge(s,264,131,302,131, phase>=2);
+  edge(s,408,131,446,131, phase>=3);
+  edge(s,552,131,590,131, phase>=4);
+  edge(s,696,131,734,131, phase>=5);
+  // params feed their logits
+  edge(s,140,229,192,157, phase>=1);
+  edge(s,428,229,480,157, phase>=3);
+  // MSE tag
+  s.push(`<text class="svgt" x="788" y="98" text-anchor="middle" font-size="11" fill="${phase>=5?BLUE:GRAY}">MSE, one sample</text>`);
   // backward dashed edges
-  if(phase>=6) bedge(s,700,205,636,205);
-  if(phase>=7) bedge(s,530,205,466,192);
-  if(phase>=8){ bedge(s,360,192,124,118); bedge(s,360,196,124,238); }
+  if(phase>=6)  bedge(s,736,178,662,176);
+  if(phase>=7)  bedge(s,592,178,518,176);
+  if(phase>=8)  bedge(s,478,182,436,242);
+  if(phase>=9)  bedge(s,448,178,374,176);
+  if(phase>=10) bedge(s,304,178,230,176);
+  if(phase>=11) bedge(s,190,182,148,242);
+  if(phase>=12) bedge(s,160,178,86,176);
+  // SGD annotation once ready
+  if(phase>=12){
+    s.push(`<text class="svgt" x="16" y="330" font-size="12.5" font-weight="600" fill="${AMB}">SGD, next:  W₁ ← W₁ − α·∂L/∂W₁   ·   W₂ ← W₂ − α·∂L/∂W₂   (α = ${ALPHA})</text>`);
+  }
   $('g').innerHTML=s.join('');
-  // equation panel: symbolic chain, then where each value comes from
-  const F=x=> x<0? '('+x.toFixed(1)+')' : x.toFixed(1);
+  // ---- equation panel: symbolic chain → where each value comes from ----
   const EQ=[
-   [1,0,'wx = w · x',                     `= ${w.toFixed(1)} × ${X} = ${v.wx.toFixed(1)}`],
-   [2,0,'f&nbsp; = wx + b',               `= ${v.wx.toFixed(1)} + ${b.toFixed(1)} = ${v.f.toFixed(1)}`],
-   [3,0,'e&nbsp; = f − y',                `= ${v.f.toFixed(1)} − ${Y} = ${v.e.toFixed(1)}`],
-   [4,0,'L&nbsp; = e²',                   `= ${F(v.e)}² = ${v.L.toFixed(2)}`],
-   [5,1,'∂L/∂L',                          `= 1`],
-   [6,1,'∂L/∂e = ∂L/∂L · <u>2e</u>',      `= 1 × 2 × ${F(v.e)} = ${v.de.toFixed(1)}`],
-   [7,1,'∂L/∂f = ∂L/∂e · <u>∂e/∂f</u>',   `= ${F(v.de)} × 1 = ${v.df.toFixed(1)}`],
-   [8,1,'∂L/∂w = ∂L/∂f · <u>∂f/∂w</u>',   `= ${X} × ${F(v.df)} = ${v.dw.toFixed(1)}`],
-   [8,1,'∂L/∂b = ∂L/∂f · <u>∂f/∂b</u>',   `= 1 × ${F(v.df)} = ${v.db.toFixed(1)}`],
+   [1,0,'z₁ = W₁ · x', null, `= ${f3(t1)} × ${f3(X)} = ${f3(v.z1)}`],
+   [2,0,'h₁ = σ(z₁)', null, `= σ(${f3(v.z1)}) = ${f3(v.h1)}`],
+   [3,0,'z₂ = W₂ · h₁', null, `= ${f3(t2)} × ${f3(v.h1)} = ${f3(v.z2)}`],
+   [4,0,'ŷ&nbsp; = σ(z₂)', null, `= σ(${f3(v.z2)}) = ${f3(v.yh)}`],
+   [5,0,'L&nbsp; = ½(ŷ − y)²   <i>(MSE)</i>', null, `= ½(${f3(v.yh)} − ${Y})² = ${f4(v.L)}`],
+   [6,1,'∂L/∂ŷ = <u>ŷ − y</u>', null, `= ${f3(v.yh)} − ${Y} = ${f3(v.dyh)}`],
+   [7,1,'∂L/∂z₂ = ∂L/∂ŷ · ∂ŷ/∂z₂', '= ∂L/∂ŷ · <u>σ′(z₂)</u>,&nbsp; σ′ = ŷ(1−ŷ)', `= ${P(v.dyh)} × ${f3(v.s2)} = ${f4(v.dz2)}`],
+   [8,1,'∂L/∂W₂ = ∂L/∂z₂ · ∂z₂/∂W₂', '= ∂L/∂z₂ · <u>h₁</u>', `= ${P4(v.dz2)} × ${f3(v.h1)} = ${f4(v.dt2)}`],
+   [9,1,'∂L/∂h₁ = ∂L/∂z₂ · ∂z₂/∂h₁', '= ∂L/∂z₂ · <u>W₂</u>', `= ${P4(v.dz2)} × ${f3(t2)} = ${f4(v.dh1)}`],
+   [10,1,'∂L/∂z₁ = ∂L/∂h₁ · ∂h₁/∂z₁', '= ∂L/∂h₁ · <u>σ′(z₁)</u>,&nbsp; σ′ = h₁(1−h₁)', `= ${P4(v.dh1)} × ${f3(v.s1)} = ${f4(v.dz1)}`],
+   [11,1,'∂L/∂W₁ = ∂L/∂z₁ · ∂z₁/∂W₁', '= ∂L/∂z₁ · <u>x</u>', `= ${P4(v.dz1)} × ${f3(X)} = ${f4(v.dt1)}`],
+   [12,1,'∂L/∂x&nbsp; = ∂L/∂z₁ · ∂z₁/∂x', '= ∂L/∂z₁ · <u>W₁</u>', `= ${P4(v.dz1)} × ${f3(t1)} = ${f4(v.dx)}`],
+   [12,2,'W₁ ← W₁ − α · ∂L/∂W₁', null, `= ${f3(t1)} − ${ALPHA} × ${P4(v.dt1)} = ${f3(t1-ALPHA*v.dt1)}`],
+   [12,2,'W₂ ← W₂ − α · ∂L/∂W₂', null, `= ${f3(t2)} − ${ALPHA} × ${P4(v.dt2)} = ${f3(t2-ALPHA*v.dt2)}`],
   ];
   let eh='<h4>forward — compute &amp; record</h4>';
-  EQ.forEach(([ph,bk,sym,num],i)=>{
-    if(i===4) eh+='<h4 class="bk">backward — chain rule, one link per line</h4>';
+  EQ.forEach(([ph,grp,sym,mid,num],i)=>{
+    if(i===5)  eh+='<h4 class="bk">backward — chain rule, one link per line</h4>';
+    if(i===12) eh+='<h4 class="bk" style="text-transform:none">SGD UPDATE (α = '+ALPHA+')</h4>';
     const on = phase>=ph;
-    const now = phase===ph;
-    eh+=`<div class="eq${on?' done':''}${now?' now':''}${bk?' bk':''}">${sym}<span class="num">${on? num : '= ·'}</span></div>`;
+    const now = grp<2 ? phase===ph && (phase!==12 || i===11) : false;
+    const nowSgd = grp===2 && phase===12;
+    const midHtml = mid? `<span class="num mid">${on? mid : '= ·'}</span>` : '';
+    eh+=`<div class="eq${on?' done':''}${(now||nowSgd)?' now':''}${grp?' bk':''}">${sym}${midHtml}<span class="num">${on? num : mid? '' : '= ·'}</span></div>`;
   });
   $('eqs').innerHTML=eh;
-  // message
-  const m=$('msg'); m.innerHTML=MSGS[phase](v); m.className=phase>=5?'back':'';
-  // table
-  const rows=[['r0',phase>=1,v.wx.toFixed(1),null,null],
-              ['r1',phase>=2,v.f.toFixed(1),'s1',phase>=7?v.df.toFixed(1):null],
-              ['r2',phase>=3,v.e.toFixed(1),'s2',phase>=6?v.de.toFixed(1):null],
-              ['r3',phase>=4,v.L.toFixed(2),'s3',phase>=5?'1':null],
-              ['r4',true,w.toFixed(1),'s4',phase>=8?v.dw.toFixed(1):null],
-              ['r5',true,b.toFixed(1),'s5',phase>=8?v.db.toFixed(1):null]];
-  const NOW={1:'r0',2:'r1',3:'r2',4:'r3',5:'r3',6:'r2',7:'r1',8:'r4'};
-  rows.forEach(([rid,on,val,sid,sens],i)=>{
-    const tr=$(rid); tr.className = on?'done':'';
-    if(NOW[phase]===rid) tr.className='now';
-    $('v'+i).textContent = on? val : '–';
-    if(sid) $(sid.replace('s','s')).textContent = sens===null? '–' : sens;
-  });
-  if(phase===8 && NOW[8]) $('r5').className='now';
-  $('apply').disabled = phase<8;
-  $('step').disabled = phase>=8;
-  $('hist').textContent = losses.length? ('loss after each gradient step: ' + losses.map(x=>x.toFixed(2)).join('  →  ')) : '';
+  // message + buttons + history
+  const m=$('msg'); m.innerHTML=MSGS[phase](v); m.className=phase>=6?'back':'';
+  $('apply').disabled = phase<LAST;
+  $('step').disabled = phase>=LAST;
+  $('hist').textContent = losses.length? ('MSE loss after each SGD step: ' + losses.map(x=>x.toFixed(4)).join('  →  ')) : '';
 }
-function step(){ if(phase<8){ phase++; draw(); } if(phase>=8 && timer){ clearInterval(timer); timer=null; $('auto').textContent='Auto-play'; } }
+function step(){ if(phase<LAST){ phase++; draw(); } if(phase>=LAST && timer){ clearInterval(timer); timer=null; $('auto').textContent='Auto-play'; } }
 $('step').onclick=step;
 $('auto').onclick=function(){
   if(timer){ clearInterval(timer); timer=null; this.textContent='Auto-play'; return; }
-  if(phase>=8){ phase=0; }
-  this.textContent='Pause'; timer=setInterval(step,1000);
+  if(phase>=LAST){ phase=0; }
+  this.textContent='Pause'; timer=setInterval(step,1100);
 };
 $('apply').onclick=()=>{
   const v=vals(); losses.push(v.L);
-  w=Math.round((w-ETA*v.dw)*100)/100; b=Math.round((b-ETA*v.db)*100)/100;
-  $('w').value=w; $('b').value=b; $('wv').textContent=w.toFixed(1); $('bv').textContent=b.toFixed(1);
+  t1=Math.round((t1-ALPHA*v.dt1)*1000)/1000; t2=Math.round((t2-ALPHA*v.dt2)*1000)/1000;
+  $('t1').value=t1; $('t2').value=t2; $('t1v').textContent=t1.toFixed(2); $('t2v').textContent=t2.toFixed(2);
   phase=0; draw();
-  $('msg').innerHTML=`<b>Updated:</b> w ← ${w.toFixed(2)}, b ← ${b.toFixed(2)} (each moved against its gradient by η = ${ETA}). Run the passes again and watch the loss shrink.`;
+  $('msg').innerHTML=`<b>SGD update applied:</b> W₁ ← ${t1.toFixed(3)}, W₂ ← ${t2.toFixed(3)} — each moved <i>against</i> its gradient by α = ${ALPHA}. Run the passes again and watch the MSE shrink.`;
 };
-$('reset').onclick=()=>{ w=2;b=1;phase=0;losses=[]; $('w').value=2;$('b').value=1;$('wv').textContent='2.0';$('bv').textContent='1.0'; draw(); };
-$('w').oninput=e=>{ w=+e.target.value; $('wv').textContent=w.toFixed(1); phase=0; losses=[]; draw(); };
-$('b').oninput=e=>{ b=+e.target.value; $('bv').textContent=b.toFixed(1); phase=0; losses=[]; draw(); };
+$('reset').onclick=()=>{ t1=0.5;t2=0.8;phase=0;losses=[]; $('t1').value=0.5;$('t2').value=0.8;$('t1v').textContent='0.50';$('t2v').textContent='0.80'; draw(); };
+$('t1').oninput=e=>{ t1=+e.target.value; $('t1v').textContent=t1.toFixed(2); phase=0; losses=[]; draw(); };
+$('t2').oninput=e=>{ t2=+e.target.value; $('t2v').textContent=t2.toFixed(2); phase=0; losses=[]; draw(); };
 draw();
 })();
 </script>
