@@ -26,7 +26,7 @@ canvas{display:block}
 .frac span:first-child{border-bottom:1px solid currentColor}
 .losshead{position:absolute;left:50%;transform:translateX(-50%);top:8px;text-align:center;pointer-events:none;background:transparent}
 .losshead svg{display:block;margin:0 auto}
-.losseq{display:inline-block;margin-top:10px;padding:4px 14px;border-radius:6px;font-family:Georgia,"Times New Roman",serif;font-style:italic;font-size:24px;color:#1a1a1a;transition:color .2s,text-shadow .2s,background .2s,transform .2s,box-shadow .2s;white-space:nowrap}
+.losseq{display:inline-block;margin-top:26px;padding:4px 14px;border-radius:6px;font-family:Georgia,"Times New Roman",serif;font-style:italic;font-size:24px;color:#1a1a1a;transition:color .2s,text-shadow .2s,background .2s,transform .2s,box-shadow .2s;white-space:nowrap}
 .losseq sub{font-size:13px}
 .losseq.lit{color:var(--hl);text-shadow:0 0 14px rgba(180,83,9,.5);background:rgba(180,83,9,.10);box-shadow:0 0 0 1.5px rgba(180,83,9,.55),0 0 22px rgba(180,83,9,.35);transform:scale(1.07)}
 .kicker{position:absolute;left:22px;top:16px;font-family:system-ui,sans-serif;font-size:12.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent2)}
@@ -184,7 +184,7 @@ const wPaths=WORDS.map((_,i)=>({S:N((i-2)*1.3, -.45, 3.9), E:N((i-2)*.62, yOf.X,
 
 // ---- camera: wide oscillating orbit + drag + parallax ----
 const cam=new THREE.PerspectiveCamera(33,innerWidth/innerHeight,.1,60);
-const target=N(0,H*.58,0);
+const target=N(0,H*.78,0);
 let baseTh=-.55, dragTh=0, dragPhi=0, mx=0,my=0, smx=0,smy=0, down=null;
 addEventListener('pointerdown',e=>down=[e.clientX,e.clientY,dragTh,dragPhi]);
 addEventListener('pointerup',()=>down=null);
