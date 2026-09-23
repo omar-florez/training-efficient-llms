@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Appendix B — Notation, conventions, and the running example · Efficient Training of LLMs</title>
+<style>
+:root{--ink:#1a1a1a;--mute:#5c5c5c;--mid:#a3a3a3;--rule:#d9d9d9;--soft:#f2f5f9;--bg:#fdfdfb;--accent:#17406b;--accent2:#3f74b8;--hl:#b45309}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-size:17px;line-height:1.6}
+.page{max-width:820px;margin:0 auto;padding:48px 28px 96px}
+.chap-head{border-bottom:2px solid var(--accent);padding-bottom:16px;margin-bottom:32px}
+.chap-head .kicker{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}
+.chap-head h1{font-size:36px;line-height:1.15;margin:8px 0 6px;letter-spacing:-.01em}
+.chap-head .sub{color:var(--mute);font-style:italic;font-size:18px}
+h2{font-size:24px;margin:44px 0 12px;letter-spacing:-.01em;color:var(--accent)}
+h2 .n{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;color:var(--accent2);margin-right:10px;vertical-align:middle}
+h3{font-size:19px;margin:28px 0 8px;color:#20456e}
+p{margin:0 0 16px}
+p.lead{font-size:18.5px}
+figure{margin:28px 0;page-break-inside:avoid}
+figure svg{display:block;max-width:100%;height:auto;margin:0 auto}
+figcaption{font-size:14.5px;color:var(--mute);line-height:1.5;margin-top:10px;padding:0 6px}
+figcaption b{color:var(--accent)}
+table{border-collapse:collapse;width:100%;margin:20px 0;font-size:15px}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--accent2);border-bottom:1px solid var(--accent)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+caption{caption-side:top;text-align:left;font-size:14.5px;color:var(--mute);padding:0 0 8px}
+caption b{color:var(--accent)}
+pre{background:var(--soft);border:1px solid #cfdcee;border-left:3px solid var(--accent2);border-radius:4px;padding:14px 16px;overflow-x:auto;font-size:13.5px;line-height:1.5;margin:18px 0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+p code,li code,td code{background:var(--soft);padding:1px 5px;border-radius:3px;font-size:14.5px}
+ul,ol{padding-left:24px;margin:0 0 16px}
+li{margin-bottom:8px}
+.cbox{border:1px solid var(--rule);border-left:4px solid var(--hl);background:#fff;border-radius:4px;padding:16px 18px;margin:24px 0}
+.cbox h4{margin:0 0 8px;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--hl)}
+hr.sec{border:0;border-top:1px solid var(--rule);margin:40px 0}
+@media print{body{font-size:11pt}.page{padding:0;max-width:none}pre{white-space:pre-wrap}figure{page-break-inside:avoid}h2{page-break-after:avoid}}
+.math-display{margin:18px 0;text-align:center}
+math{font-size:1.12em}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="chap-head">
+  <div class="kicker">Omar U. Florez, PhD · Efficient Training of LLMs · Appendices · Appendix B</div>
+  <h1>Notation, conventions, and the running example</h1>
+  <div class="sub">The symbols, the constants, and the 7B configuration that every chapter quietly assumes — collected on six pages so no chapter has to restate them</div>
+</header>
+
+<p class="lead">Every chapter of this book leans on a shared set of symbols, a shared bag of constants, and one model configuration that gets rebuilt, sharded, packed, and distilled from Chapter 3 to Chapter 30. Rather than restate them each time, they live here. If you open the book in the middle — which the preface encourages — this appendix is the two-minute orientation that makes any chapter readable.</p>
+
+<h2 id="sB-1"><span class="n">B.1</span>Symbols</h2>
+
+<table>
+<caption><b>Table B.1 — Notation used throughout.</b> Where the literature is split, the book picks one convention and holds it.</caption>
+<thead><tr><th>Symbol</th><th>Meaning</th><th>First serious use</th></tr></thead>
+<tbody>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi></mrow><annotation encoding="application/x-tex">N</annotation></semantics></math></span></td><td>model parameters (count)</td><td>Ch. 6</td></tr>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>D</mi></mrow><annotation encoding="application/x-tex">D</annotation></semantics></math></span></td><td>training tokens (count)</td><td>Ch. 6, 7</td></tr>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi></mrow><annotation encoding="application/x-tex">C</annotation></semantics></math></span></td><td>training compute, FLOPs — <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi><mo>≈</mo><mn>6</mn><mi>N</mi><mi>D</mi></mrow><annotation encoding="application/x-tex">C \approx 6ND</annotation></semantics></math></span></td><td>Ch. 6</td></tr>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi></mrow><annotation encoding="application/x-tex">d</annotation></semantics></math></span></td><td>model (hidden) dimension, a.k.a. d_model</td><td>Ch. 3</td></tr>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>d</mi><mrow><mi mathvariant="normal">f</mi><mi mathvariant="normal">f</mi></mrow></msub></mrow><annotation encoding="application/x-tex">d_{\mathrm{ff}}</annotation></semantics></math></span></td><td>MLP inner dimension (SwiGLU: 3 matrices of it)</td><td>Ch. 3</td></tr>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi></mrow><annotation encoding="application/x-tex">L</annotation></semantics></math></span></td><td>layer count — <em>layers, not sequence</em></td><td>Ch. 3</td></tr>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi></mrow><annotation encoding="application/x-tex">s</annotation></semantics></math></span></td><td>sequence length (context), in tokens</td><td>Ch. 8 on; Ch. 6 wrote it <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi></mrow><annotation encoding="application/x-tex">L</annotation></semantics></math></span> once — this book's one regret</td></tr>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>a</mi></mrow><annotation encoding="application/x-tex">a</annotation></semantics></math></span></td><td>attention head count</td><td>Ch. 3, 8</td></tr>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>b</mi></mrow><annotation encoding="application/x-tex">b</annotation></semantics></math></span></td><td>microbatch size (sequences per device per step)</td><td>Ch. 8, 14</td></tr>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>V</mi></mrow><annotation encoding="application/x-tex">V</annotation></semantics></math></span></td><td>vocabulary size</td><td>Ch. 2, 11</td></tr>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>θ</mi><mo separator="true">,</mo><mtext> </mtext><mi>W</mi></mrow><annotation encoding="application/x-tex">\theta,\ W</annotation></semantics></math></span></td><td>parameters generically; a specific weight matrix</td><td>Ch. 1</td></tr>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>z</mi><mo separator="true">,</mo><mtext> </mtext><mi>h</mi><mo separator="true">,</mo><mtext> </mtext><mover accent="true"><mi>y</mi><mo>^</mo></mover></mrow><annotation encoding="application/x-tex">z,\ h,\ \hat y</annotation></semantics></math></span></td><td>logits; activations; the model's prediction</td><td>Ch. 1</td></tr>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="script">L</mi></mrow><annotation encoding="application/x-tex">\mathcal{L}</annotation></semantics></math></span> or <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi></mrow><annotation encoding="application/x-tex">L</annotation></semantics></math></span></td><td>the loss (context disambiguates from layer count)</td><td>Ch. 1, 2</td></tr>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>η</mi><mo separator="true">,</mo><mtext> </mtext><mi>α</mi></mrow><annotation encoding="application/x-tex">\eta,\ \alpha</annotation></semantics></math></span></td><td>learning rate (the RL chapters use <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi></mrow><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span>)</td><td>Ch. 4, 25</td></tr>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>θ</mi></msub><mo separator="true">,</mo><mtext> </mtext><msub><mi>π</mi><mrow><mi mathvariant="normal">r</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">f</mi></mrow></msub></mrow><annotation encoding="application/x-tex">\pi_\theta,\ \pi_{\mathrm{ref}}</annotation></semantics></math></span></td><td>policy; frozen reference policy</td><td>Ch. 24, 25</td></tr>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi>A</mi><mo stretchy="true">^</mo></mover></mrow><annotation encoding="application/x-tex">\widehat{A}</annotation></semantics></math></span></td><td>advantage estimate (GRPO: group-normalized)</td><td>Ch. 25</td></tr>
+<tr><td><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>G</mi></mrow><annotation encoding="application/x-tex">G</annotation></semantics></math></span></td><td>rollout group size per prompt</td><td>Ch. 25</td></tr>
+<tr><td>DP · TP · PP · EP</td><td>data / tensor / pipeline / expert parallel degrees</td><td>Ch. 14</td></tr>
+</tbody>
+</table>
+
+<h2 id="sB-2"><span class="n">B.2</span>The running example: "our 7B"</h2>
+
+<p>One configuration threads the whole book: a Llama-2-7B-shaped dense transformer, chosen because its numbers are round enough to compute by hand and its shape is close enough to production practice to matter. When a chapter says "our 7B," it means exactly this:</p>
+
+<table>
+<caption><b>Table B.2 — The running configuration, and the numbers derived from it by hand.</b></caption>
+<thead><tr><th>Quantity</th><th class="num">Value</th><th>Derived where</th></tr></thead>
+<tbody>
+<tr><td>layers <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi></mrow><annotation encoding="application/x-tex">L</annotation></semantics></math></span> / hidden <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi></mrow><annotation encoding="application/x-tex">d</annotation></semantics></math></span> / heads <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>a</mi></mrow><annotation encoding="application/x-tex">a</annotation></semantics></math></span></td><td class="num">32 / 4096 / 32</td><td>Ch. 3</td></tr>
+<tr><td>MLP <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>d</mi><mrow><mi mathvariant="normal">f</mi><mi mathvariant="normal">f</mi></mrow></msub></mrow><annotation encoding="application/x-tex">d_{\mathrm{ff}}</annotation></semantics></math></span> (SwiGLU) / vocab <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>V</mi></mrow><annotation encoding="application/x-tex">V</annotation></semantics></math></span></td><td class="num">11,008 / 32,000</td><td>Ch. 3</td></tr>
+<tr><td>parameters <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi></mrow><annotation encoding="application/x-tex">N</annotation></semantics></math></span></td><td class="num">6.74&nbsp;B</td><td>counted by hand, Ch. 3</td></tr>
+<tr><td>forward FLOPs per token @ <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi><mo lspace="0em" rspace="0em">=</mo><mn>4096</mn></mrow><annotation encoding="application/x-tex">s{=}4096</annotation></semantics></math></span></td><td class="num">15.4&nbsp;GF</td><td>Ch. 8 (§8.1)</td></tr>
+<tr><td>training FLOPs per token (fwd+bwd)</td><td class="num">46&nbsp;GF ≈ <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>6</mn><mi>N</mi></mrow><annotation encoding="application/x-tex">6N</annotation></semantics></math></span> + attention</td><td>Ch. 8 (§8.2)</td></tr>
+<tr><td>training states (16 B/param)</td><td class="num">108&nbsp;GB</td><td>Ch. 4, 8</td></tr>
+<tr><td>activations, <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>b</mi><mo lspace="0em" rspace="0em">=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">b{=}1</annotation></semantics></math></span>, <span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi><mo lspace="0em" rspace="0em">=</mo><mn>4096</mn></mrow><annotation encoding="application/x-tex">s{=}4096</annotation></semantics></math></span>, FlashAttention</td><td class="num">18&nbsp;GB</td><td>Ch. 8 (§8.3)</td></tr>
+<tr><td>healthy single-node throughput (8×H100)</td><td class="num">~9.8&nbsp;K tok/s/GPU ≈ 40% MFU</td><td>Ch. 8 (§8.6)</td></tr>
+</tbody>
+</table>
+
+<p>The example language is Spanish wherever a language must be chosen — tokenizer walkthroughs, eval slices, the input sentences of the interactive animations — and the example datasets are FineWeb-Edu (sample-10BT) for pre-training text and UltraChat-200k for dialogue, as fixed in the preface.</p>
+
+<h2 id="sB-3"><span class="n">B.3</span>The constants worth memorizing</h2>
+
+<table>
+<caption><b>Table B.3 — The book's working constants.</b> Each is derived once and then used everywhere; the page cited is the derivation, not a bare assertion.</caption>
+<thead><tr><th>Constant</th><th class="num">Value</th><th>What it prices</th><th>Derived in</th></tr></thead>
+<tbody>
+<tr><td>forward cost</td><td class="num"><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2</mn><mi>N</mi></mrow><annotation encoding="application/x-tex">2N</annotation></semantics></math></span> FLOPs/token</td><td>2 FLOPs per weight per token</td><td>Ch. 6, 8</td></tr>
+<tr><td>training cost</td><td class="num"><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>6</mn><mi>N</mi><mi>D</mi></mrow><annotation encoding="application/x-tex">6ND</annotation></semantics></math></span> FLOPs</td><td>backward = 2× forward</td><td>Ch. 6, 8</td></tr>
+<tr><td>attention surcharge</td><td class="num"><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>×</mo><mo stretchy="false">(</mo><mn>1</mn><mo>+</mo><mi>s</mi><mi mathvariant="normal">/</mi><mn>6</mn><mi>d</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\times(1 + s/6d)</annotation></semantics></math></span></td><td>the pairwise term 6ND ignores</td><td>Ch. 6</td></tr>
+<tr><td>recompute penalty</td><td class="num"><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>6</mn><mi>N</mi><mo>→</mo><mn>8</mn><mi>N</mi></mrow><annotation encoding="application/x-tex">6N \to 8N</annotation></semantics></math></span></td><td>checkpoint-everything reruns the forward</td><td>Ch. 8</td></tr>
+<tr><td>training state</td><td class="num">16 bytes/param</td><td>bf16 w + g, fp32 Adam m, v + master</td><td>Ch. 4</td></tr>
+<tr><td>activations/layer</td><td class="num"><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi><mtext> </mtext><mi>b</mi><mtext> </mtext><mi>d</mi><mtext> </mtext><mo stretchy="false">(</mo><mn>34</mn><mo>+</mo><mn>5</mn><mi>a</mi><mi>s</mi><mi mathvariant="normal">/</mi><mi>d</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">s\,b\,d\,(34 + 5as/d)</annotation></semantics></math></span> bytes</td><td>the quadratic term FlashAttention deletes</td><td>Ch. 8</td></tr>
+<tr><td>H100 ridge</td><td class="num">≈295 FLOPs/byte</td><td>989 TF/s ÷ 3.35 TB/s: compute- vs memory-bound</td><td>Ch. 8</td></tr>
+<tr><td>MFU</td><td class="num"><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>6</mn><mi>N</mi><mo>⋅</mo><mrow><mi mathvariant="normal">t</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">k</mi><mi mathvariant="normal">/</mi><mi mathvariant="normal">s</mi></mrow><mtext> </mtext><mi mathvariant="normal">/</mi><mtext> </mtext><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">k</mi></mrow></mrow><annotation encoding="application/x-tex">6N \cdot \mathrm{tok/s} \,/\, \mathrm{peak}</annotation></semantics></math></span></td><td>the honest utilization number (dense peak!)</td><td>Ch. 8</td></tr>
+<tr><td>inference cost</td><td class="num"><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2</mn><mi>N</mi></mrow><annotation encoding="application/x-tex">2N</annotation></semantics></math></span> FLOPs/token</td><td>one forward, no backward</td><td>Ch. 6, 7</td></tr>
+<tr><td>Chinchilla ratio</td><td class="num"><span class="katex"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>D</mi><mo>≈</mo><mn>20</mn><mi>N</mi></mrow><annotation encoding="application/x-tex">D \approx 20N</annotation></semantics></math></span></td><td>compute-optimal tokens — a starting point, bent by inference (Ch. 7)</td><td>Ch. 7</td></tr>
+</tbody>
+</table>
+
+<h2 id="sB-4"><span class="n">B.4</span>Conventions</h2>
+
+<p>Cross-references "§14.3" point within the book; "Ch. 14" names the chapter. Numeric claims carry footnotes to primary sources; our own measurements are marked as ours and rounded. Every figure is grayscale-plus-navy inline SVG with a numbered caption; code blocks show the lines that matter and point to the companion repository for the rest. Benchmarks are always reported with their harness config per Chapter 9 — a score without its template, shot count, and normalization is treated as a number without units, in this book and in the reader's future reports, which is rather the point of the whole exercise.</p>
+
+<hr class="sec">
+<p style="color:var(--mute);font-size:14.5px">Referenced implicitly from every chapter; explicitly from the preface. Corrections: the errata file in the course repository.</p>
+
+</div>
+</body>
+</html>

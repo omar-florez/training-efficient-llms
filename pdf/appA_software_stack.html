@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Appendix A — The software stack · Efficient Training of LLMs</title>
+<style>
+:root{--ink:#1a1a1a;--mute:#5c5c5c;--mid:#a3a3a3;--rule:#d9d9d9;--soft:#f2f5f9;--bg:#fdfdfb;--accent:#17406b;--accent2:#3f74b8;--hl:#b45309}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-size:17px;line-height:1.6}
+.page{max-width:820px;margin:0 auto;padding:48px 28px 96px}
+.chap-head{border-bottom:2px solid var(--accent);padding-bottom:16px;margin-bottom:32px}
+.chap-head .kicker{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}
+.chap-head h1{font-size:36px;line-height:1.15;margin:8px 0 6px;letter-spacing:-.01em}
+.chap-head .sub{color:var(--mute);font-style:italic;font-size:18px}
+h2{font-size:24px;margin:44px 0 12px;letter-spacing:-.01em;color:var(--accent)}
+h2 .n{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;color:var(--accent2);margin-right:10px;vertical-align:middle}
+h3{font-size:19px;margin:28px 0 8px;color:#20456e}
+p{margin:0 0 16px}
+p.lead{font-size:18.5px}
+figure{margin:28px 0;page-break-inside:avoid}
+figure svg{display:block;max-width:100%;height:auto;margin:0 auto}
+figcaption{font-size:14.5px;color:var(--mute);line-height:1.5;margin-top:10px;padding:0 6px}
+figcaption b{color:var(--accent)}
+table{border-collapse:collapse;width:100%;margin:20px 0;font-size:15px}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--accent2);border-bottom:1px solid var(--accent)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+caption{caption-side:top;text-align:left;font-size:14.5px;color:var(--mute);padding:0 0 8px}
+caption b{color:var(--accent)}
+pre{background:var(--soft);border:1px solid #cfdcee;border-left:3px solid var(--accent2);border-radius:4px;padding:14px 16px;overflow-x:auto;font-size:13.5px;line-height:1.5;margin:18px 0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+p code,li code,td code{background:var(--soft);padding:1px 5px;border-radius:3px;font-size:14.5px}
+ul,ol{padding-left:24px;margin:0 0 16px}
+li{margin-bottom:8px}
+.cbox{border:1px solid var(--rule);border-left:4px solid var(--hl);background:#fff;border-radius:4px;padding:16px 18px;margin:24px 0}
+.cbox h4{margin:0 0 8px;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--hl)}
+hr.sec{border:0;border-top:1px solid var(--rule);margin:40px 0}
+@media print{body{font-size:11pt}.page{padding:0;max-width:none}pre{white-space:pre-wrap}figure{page-break-inside:avoid}h2{page-break-after:avoid}}
+.math-display{margin:18px 0;text-align:center}
+math{font-size:1.12em}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="chap-head">
+  <div class="kicker">Omar U. Florez, PhD · Efficient Training of LLMs · Appendices · Appendix A</div>
+  <h1>The software stack</h1>
+  <div class="sub">Every tool this book leans on, positioned in one map — what it is for, when it enters the story, and the version discipline that keeps a run reproducible</div>
+</header>
+
+<p class="lead">Chapter 4 promised this map. The training stack is not one tool but five layers of them, and most confusion about "what should we use" dissolves once each tool is pinned to its layer and its chapter. This appendix is the reference: the layer diagram, one table of what the book uses where, and the version discipline that Chapter 9 made non-negotiable. It is deliberately opinionated — these are the defaults this book's pipelines are built on, not a survey — and each row points back to the chapter where the choice is argued rather than asserted.</p>
+
+<h2 id="sA-1"><span class="n">A.1</span>The five layers</h2>
+
+<figure>
+<svg viewBox="0 0 820 356" width="820" height="356" role="img" aria-label="The training software stack in five layers: framework core, model and data layer, training-scale engines, inference and RL engines, and measurement, with the tools this book uses placed in each layer">
+  <style>text{font-family:system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px}</style>
+  <text x="24" y="26" font-weight="600" fill="#17406b" font-size="13">THE STACK, POSITIONED (bottom = closest to the silicon; right column = where it is argued)</text>
+  <g>
+    <rect x="24" y="288" width="700" height="46" rx="6" fill="#17406b"/>
+    <text x="40" y="308" fill="#fff" font-weight="700">1 · framework core</text>
+    <text x="40" y="325" fill="#9dbfe4" font-size="11.5">PyTorch · CUDA/cuDNN · NCCL — tensors, autograd, collectives</text>
+    <text x="796" y="314" text-anchor="end" fill="#5c5c5c" font-size="11.5">Ch. 1, 4</text>
+    <rect x="24" y="230" width="700" height="46" rx="6" fill="#2c5686"/>
+    <text x="40" y="250" fill="#fff" font-weight="700">2 · model &amp; data</text>
+    <text x="40" y="267" fill="#c9dcf0" font-size="11.5">transformers · datasets · tokenizers · flash-attn — the model zoo and the corpus plumbing</text>
+    <text x="796" y="256" text-anchor="end" fill="#5c5c5c" font-size="11.5">Ch. 3, 10–16</text>
+    <rect x="24" y="172" width="700" height="46" rx="6" fill="#3f74b8"/>
+    <text x="40" y="192" fill="#fff" font-weight="700">3 · training at scale</text>
+    <text x="40" y="209" fill="#dbe7f6" font-size="11.5">FSDP2 (torch.distributed) · Megatron-Core — sharding, TP/PP meshes, the 4D toolbox</text>
+    <text x="796" y="198" text-anchor="end" fill="#5c5c5c" font-size="11.5">Ch. 14, 15</text>
+    <rect x="24" y="114" width="700" height="46" rx="6" fill="#9dbfe4"/>
+    <text x="40" y="134" fill="#17406b" font-weight="700">4 · inference &amp; RL</text>
+    <text x="40" y="151" fill="#17406b" font-size="11.5">vLLM · SGLang · veRL — paged KV, continuous batching, the two-engine RL loop</text>
+    <text x="796" y="140" text-anchor="end" fill="#5c5c5c" font-size="11.5">Ch. 24, 25</text>
+    <rect x="24" y="56" width="700" height="46" rx="6" fill="#fff" stroke="#b45309" stroke-width="1.6"/>
+    <text x="40" y="76" fill="#b45309" font-weight="700">5 · measurement</text>
+    <text x="40" y="93" fill="#7a3806" font-size="11.5">lm-evaluation-harness · torch.profiler / Nsight · W&amp;B or MLflow — the instrument panel</text>
+    <text x="796" y="82" text-anchor="end" fill="#5c5c5c" font-size="11.5">Ch. 8, 9</text>
+  </g>
+  <text x="24" y="352" fill="#5c5c5c" font-size="11.5">rule of thumb: pick per layer, not per project — two tools from the SAME layer in one trainer is where integration pain lives.</text>
+</svg>
+<figcaption><b>Figure A.1 — The stack in five layers.</b> Lower layers change rarely and break loudly; upper layers change often and break quietly — which is why the version pinning of §A.3 concentrates its paranoia at the top.</figcaption>
+</figure>
+
+<h2 id="sA-2"><span class="n">A.2</span>What the book uses where</h2>
+
+<table>
+<caption><b>Table A.1 — The default stack, tool by tool.</b> "Alternative" names the credible substitute and when it wins.</caption>
+<thead><tr><th>Tool</th><th>Job in this book</th><th>Enters at</th><th>Alternative, and when it wins</th></tr></thead>
+<tbody>
+<tr><td>PyTorch (≥2.4)</td><td>everything — tensors, autograd, <code>torch.compile</code>, FSDP2, DTensor/device mesh</td><td>Ch. 1</td><td>JAX — TPU shops and research on program transforms</td></tr>
+<tr><td>transformers</td><td>model definitions, checkpoints, chat templates</td><td>Ch. 3</td><td>hand-rolled model code — when you need Ch. 13-style kernel surgery</td></tr>
+<tr><td>datasets + tokenizers</td><td>streaming corpus plumbing; BPE training (Ch. 11)</td><td>Ch. 2, 10</td><td>WebDataset/Mosaic streaming — petabyte-scale shard pipelines</td></tr>
+<tr><td>flash-attn</td><td>fused attention + varlen kernels that make packing free</td><td>Ch. 13, 16</td><td>PyTorch SDPA — smaller deps, slightly behind on features</td></tr>
+<tr><td>FSDP2</td><td>the book's default sharding for ≤~256 GPUs</td><td>Ch. 14</td><td>Megatron-Core — TP/PP at trillion-token scale; DeepSpeed — legacy ZeRO stacks</td></tr>
+<tr><td>vLLM</td><td>rollout engine: paged KV, continuous batching</td><td>Ch. 25</td><td>SGLang — structured generation and radix-cache reuse</td></tr>
+<tr><td>veRL</td><td>GRPO/PPO with the hybrid two-engine loop</td><td>Ch. 25</td><td>TRL — single-node SFT/DPO simplicity, no hybrid engine</td></tr>
+<tr><td>lm-evaluation-harness</td><td>the frozen suite of Table 9.1, pinned configs</td><td>Ch. 9</td><td>OLMES configs on top of it — when comparability with OLMo matters</td></tr>
+<tr><td>torch.profiler / Nsight Systems</td><td>the MFU audit of §8.6–8.8</td><td>Ch. 8</td><td>—</td></tr>
+<tr><td>W&amp;B / MLflow</td><td>curves, configs, artifact lineage</td><td>Ch. 4</td><td>TensorBoard — air-gapped clusters</td></tr>
+</tbody>
+</table>
+
+<h2 id="sA-3"><span class="n">A.3</span>Version discipline: the lockfile is part of the run</h2>
+
+<p>Chapter 9 established the rule for evaluation; it holds for the whole stack: <em>a result travels with its versions or it does not travel</em>. The failure modes are concrete — a <code>transformers</code> minor release changes a chat template and every eval shifts (§9.7's cliff); a flash-attn wheel built for the wrong CUDA silently falls back to a slow path and MFU drops eight points with no error; an lm-eval upgrade rewrites a task template and your GSM8K "regresses." The practice that prevents all three costs one file and one habit:</p>
+
+<pre><code># the environment IS an artifact of the run — freeze it next to the checkpoint
+pip freeze &gt; runs/2026-09-21_7b/requirements.lock.txt
+python - &lt;&lt;'PY' &gt;&gt; runs/2026-09-21_7b/env.json
+import torch, json
+print(json.dumps({
+  "torch": torch.__version__, "cuda": torch.version.cuda,
+  "cudnn": torch.backends.cudnn.version(),
+  "gpu": torch.cuda.get_device_name(0),
+  "nccl": ".".join(map(str, torch.cuda.nccl.version()))}))
+PY
+# and the habit (Ch. 9): after ANY upgrade, rerun one frozen old checkpoint
+# through the suite before believing numbers from a new one.</code></pre>
+
+<p>Two containerization notes from our own runs. Build one image per <em>project phase</em>, not per experiment — the pre-training image (layers 1–3) and the post-training image (adds vLLM/veRL, whose CUDA-graph and NCCL expectations are the usual conflict source) want to evolve separately. And upgrade on a schedule, not on release day: the stack's top layers move monthly, and the productive rhythm is a quarterly pinned refresh with the Chapter 9 control-rerun as the gate, plus out-of-band upgrades only for a bug you are actually hitting.</p>
+
+<hr class="sec">
+<p style="color:var(--mute);font-size:14.5px">Referenced from Chapter 4 (§4.8). Companion install recipes and images: the course repository, <code>env/</code>.</p>
+
+</div>
+</body>
+</html>
