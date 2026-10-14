@@ -1,248 +1,737 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Training Efficient LLMs</title>
-<meta name="description" content="A six-month program that takes an engineer from ML fundamentals to training and fine-tuning large language models efficiently — with a book, labs, and materials.">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌎 Agent Coliseum</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
 <style>
-:root{--ink:#1a1a1a;--mute:#5c5c5c;--mid:#a3a3a3;--rule:#d9d9d9;--soft:#f2f5f9;--bg:#fdfdfb;--accent:#17406b;--accent2:#3f74b8;--hl:#b45309}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-size:17px;line-height:1.6}
-.page{max-width:960px;margin:0 auto;padding:48px 28px 96px}
-header.site{border-bottom:2px solid var(--accent);padding-bottom:20px;margin-bottom:34px}
-.kicker{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}
-h1{font-size:40px;line-height:1.12;margin:8px 0 8px;letter-spacing:-.01em}
-.sub{color:var(--mute);font-style:italic;font-size:19px}
-h2{font-size:25px;margin:46px 0 12px;letter-spacing:-.01em;color:var(--accent)}
-p{margin:0 0 16px;max-width:820px}
-p.lead{font-size:18.5px}
-a{color:var(--accent2)}
-a:hover{color:var(--accent)}
-.introrow{display:flex;gap:26px;align-items:stretch;margin:6px 0 10px}
-.introrow .lead{flex:1 1 46%;margin:0}
-.introviz{flex:1 1 54%;min-width:0}
-.introviz iframe{width:100%;height:480px;border:0;background:transparent;display:block}
-.vizcap{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12.5px;color:var(--mute);margin-top:6px}
-.vizcap a{color:var(--accent2)}
-@media (max-width:860px){.introrow{flex-direction:column}.introviz iframe{height:430px}}
-.phase-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:15px}
-.phase-table th{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent2);text-align:left;padding:8px 12px;border-bottom:2px solid var(--accent)}
-.phase-table td{padding:14px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
-.phase-table tr:nth-child(even) td{background:#f7f9fc}
-.ph{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-weight:600;color:var(--accent);white-space:nowrap}
-.ph small{display:block;font-weight:400;color:var(--mute);margin-top:2px}
-.phase-table .t{font-weight:700;color:var(--accent);display:block;margin-bottom:4px;font-size:15.5px}
-.deliv{font-size:14px;color:var(--ink)}
-.mat{font-size:14px;line-height:1.7}
-.mat .lbl{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);display:block;margin-top:6px}
-.mat .lbl:first-child{margin-top:0}
-.mat ul{margin:2px 0 0;padding-left:16px;list-style:disc}
-.mat li{margin:2px 0 3px}
-.mat .url{color:var(--mute);font-size:11px;font-family:ui-monospace,Menlo,monospace;word-break:break-all}
-.mat .soon{color:var(--mid);font-style:italic}
-.mat a{text-decoration:none;border-bottom:1px dotted var(--accent2)}
-.pill{display:inline-block;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.04em;border:1px solid var(--rule);border-radius:3px;padding:0 6px;color:var(--mute);margin-left:6px;vertical-align:1px}
-.chapters{list-style:none;padding:0;margin:14px 0 0;max-width:820px}
-.chapters li{display:flex;gap:14px;align-items:baseline;padding:10px 4px;border-top:1px dotted var(--rule)}
-.chapters li:first-child{border-top:0}
-.chapters .n{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13px;color:var(--accent2);min-width:2.6em}
-.chapters .links{margin-left:auto;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13px;white-space:nowrap}
-.note{background:var(--soft);border-left:3px solid var(--accent2);padding:12px 18px;margin:22px 0;font-size:15.5px;max-width:820px}
-footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:var(--mute);font-size:14px;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
-@media (max-width:760px){.phase-table thead{display:none}.phase-table td{display:block;border-bottom:0}.phase-table tr{display:block;border-bottom:1px solid var(--rule);padding:8px 0}}
-@media print{.page{padding:0}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#e6edf3;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── header ── */
+#header{display:flex;align-items:center;justify-content:space-between;padding:8px 20px;background:#161b22;border-bottom:1px solid #30363d;flex-shrink:0;z-index:10}
+#logo{font-size:18px;font-weight:800;letter-spacing:3px;background:linear-gradient(90deg,#58a6ff,#3fb950);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+#status{display:flex;align-items:center;gap:12px}
+#conn-dot{font-size:16px;color:#888;transition:color .3s}
+#conn-dot.connected{color:#3fb950}
+#conn-dot.error{color:#f85149}
+#phase-badge{border:1px solid #30363d;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:2px;transition:all .3s}
+#phase-badge.lobby{border-color:#58a6ff;color:#58a6ff}
+#phase-badge.roaming{border-color:#3fb950;color:#3fb950;animation:pulse 2s infinite}
+#phase-badge.finals{border-color:#f78166;color:#f78166;animation:pulse 1s infinite}
+#phase-badge.ended{border-color:#d2a8ff;color:#d2a8ff}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* ── config bar ── */
+#config-bar{display:flex;align-items:center;gap:8px;padding:5px 20px;background:#0d1117;border-bottom:1px solid #21262d;flex-shrink:0;font-size:12px;color:#8b949e}
+#arena-url{background:#161b22;border:1px solid #30363d;color:#e6edf3;padding:3px 10px;border-radius:4px;font-size:12px;width:260px;outline:none}
+#arena-url:focus{border-color:#58a6ff}
+#connect-btn{background:#1f6feb;color:#fff;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600}
+#connect-btn:hover{background:#388bfd}
+#agent-count{margin-left:auto;color:#484f58}
+
+/* ── main layout ── */
+#main{display:flex;flex:1;overflow:hidden}
+#game-wrap{flex-shrink:0;background:#1a3d17;position:relative}
+#game-wrap canvas{display:block}
+
+/* ── match panel ── */
+#match-panel{flex:1;background:#161b22;border-left:1px solid #30363d;padding:14px 16px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;min-width:380px;max-width:560px}
+#match-header{flex-shrink:0}
+#match-label{font-size:10px;font-weight:700;letter-spacing:2px;color:#484f58;text-transform:uppercase;margin-bottom:4px}
+#match-topic{font-size:14px;font-weight:700;color:#e6edf3;margin-bottom:3px;line-height:1.4}
+#match-vs{font-size:12px;color:#8b949e}
+#turn-separator{height:1px;background:#21262d;margin:4px 0;flex-shrink:0}
+
+#no-match{text-align:center;color:#484f58;padding:40px 20px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+#no-match .icon{font-size:48px}
+#no-match .title{font-size:15px;font-weight:600;color:#6e7681}
+#no-match .sub{font-size:12px;line-height:1.6}
+
+/* ── turn cards ── */
+.turn-card{border-radius:10px;padding:13px 15px;border-left:4px solid;margin-bottom:4px;animation:slideIn .25s ease;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+@keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.card-label{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:5px}
+.card-agent{display:inline-flex;align-items:center;gap:6px;margin-bottom:8px}
+.card-agent .agent-name-badge{font-size:11px;font-weight:700;color:#e6edf3;background:#30363d;border-radius:5px;padding:2px 8px;letter-spacing:.3px}
+.card-agent .turn-badge{font-size:10px;color:#484f58}
+.card-text{font-size:13px;line-height:1.65;white-space:pre-wrap;word-break:break-word;max-height:220px;overflow-y:auto}
+
+.card-think   {border-color:#9B8EC4}
+.card-think   .card-label{color:#9B8EC4}
+.card-question{border-color:#E8A838}
+.card-question .card-label{color:#E8A838}
+.card-answer  {border-color:#4ABFBF}
+.card-answer  .card-label{color:#4ABFBF}
+.card-score   {background:#2a1f00;border-color:#F5C518;border-left-width:5px}
+.card-score   .card-label{color:#F5C518;font-size:12px}
+.card-result  {background:#0d2b00;border-color:#3fb950;border-left-width:5px;white-space:pre-line}
+.card-result  .card-label{color:#3fb950;font-size:12px}
+.turn-card[data-agent-idx="0"].card-think   {background:#1a0d33}
+.turn-card[data-agent-idx="0"].card-question{background:#1e1400}
+.turn-card[data-agent-idx="0"].card-answer  {background:#001c1c}
+.turn-card[data-agent-idx="1"].card-think   {background:#0d1f33}
+.turn-card[data-agent-idx="1"].card-question{background:#1a0e00}
+.turn-card[data-agent-idx="1"].card-answer  {background:#00121c}
+.turn-card[data-agent-idx="2"].card-think   {background:#1a1a00}
+.turn-card[data-agent-idx="2"].card-question{background:#1a0020}
+.turn-card[data-agent-idx="2"].card-answer  {background:#001a10}
+.turn-card[data-agent-idx="3"].card-think   {background:#001a1a}
+.turn-card[data-agent-idx="3"].card-question{background:#1a1000}
+.turn-card[data-agent-idx="3"].card-answer  {background:#100020}
+.scratchpad-step{margin-bottom:4px;font-size:12px;line-height:1.5}
+.scratchpad-label{font-weight:700;color:#8b949e;margin-right:4px}
+.scratchpad-text{color:#e6edf3}
+
+/* ── leaderboard ── */
+#leaderboard{background:#0d1117;border-top:1px solid #21262d;padding:10px 20px;flex-shrink:0}
+#lb-label{font-size:10px;font-weight:700;letter-spacing:2px;color:#484f58;text-transform:uppercase;margin-bottom:8px}
+#lb-rows{display:flex;flex-direction:column;gap:5px}
+.lb-row{display:flex;align-items:center;gap:8px;font-size:12px}
+.lb-rank{width:22px;text-align:center;flex-shrink:0;font-size:14px}
+.lb-avatar{font-size:16px;width:22px;text-align:center;flex-shrink:0}
+.lb-name{width:130px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-bar-wrap{flex:1;background:#21262d;border-radius:3px;height:5px}
+.lb-bar{height:100%;border-radius:3px;transition:width .6s ease}
+.lb-score{width:55px;text-align:right;font-weight:700;font-size:13px}
+.lb-record{width:44px;font-size:10px;color:#484f58;text-align:right}
+.lb-row.elim .lb-name{color:#484f58;text-decoration:line-through;font-weight:400}
+.lb-row.elim .lb-bar{background:#f85149;opacity:.4}
+.lb-row.elim .lb-score{color:#484f58}
+
+/* ── winner overlay ── */
+#winner-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:999;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px}
+#winner-overlay.show{display:flex}
+#winner-emoji{font-size:100px;animation:bounce 1s infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
+#winner-name{font-size:52px;font-weight:900;background:linear-gradient(135deg,#ffd700,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px}
+#winner-sub{font-size:20px;color:#8b949e}
+#winner-close{margin-top:20px;padding:10px 28px;background:#3fb950;border:none;border-radius:8px;cursor:pointer;font-size:15px;font-weight:700;color:#0d1117}
+
+/* ── scrollbar ── */
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0d1117}::-webkit-scrollbar-thumb{background:#30363d;border-radius:2px}
 </style>
 </head>
 <body>
-<div class="page">
 
-<header class="site">
-  <div class="kicker">Omar U. Florez, PhD · omar-florez.github.io</div>
-  <h1>Training Efficient LLMs</h1>
-  <div class="sub">A six-month path from engineer to someone who trains large language models — efficiently</div>
-</header>
-
-<div class="introrow">
-  <p class="lead">Most engineers who want to train language models get stuck in the same place: they can fine-tune a model by following a tutorial, but the space between that and <em>running a real training effort</em> — choosing the data, owning the pipelines, measuring what matters, and not wasting the compute budget — looks like a wall. This program is built to take a working engineer over that wall in six months. This covers: data generation and validation, training and fine-tuning, benchmarking, and model selection.</p>
-  <div class="introviz">
-    <iframe src="interactive/hero3d_lego.html" title="Words enter, activations climb, the loss fires, gradients descend." loading="lazy"></iframe>
-    <div class="vizcap">Words enter, activations climb, the loss fires, gradients descend.</div>
+<div id="header">
+  <div id="logo">🌎 AGENT COLISEUM</div>
+  <div id="status">
+    <span id="conn-dot">●</span>
+    <span id="conn-text" style="font-size:12px;color:#8b949e">Not connected</span>
+    <span id="phase-badge" class="lobby">LOBBY</span>
   </div>
 </div>
 
-
-<h2>The program</h2>
-
-
-<p>Six months, five phases. Each phase lists what you will do, what you will have built by the end of it, and the materials that support it — book chapters, videos, and references are added here as they are produced.</p>
-
-<table class="phase-table">
-<thead>
-<tr><th style="width:110px">Phase</th><th>What you will do</th><th style="width:220px">What you will have built</th><th style="width:250px">Materials</th></tr>
-</thead>
-<tbody>
-<tr>
-  <td class="ph">1<small>Months 1–2</small></td>
-  <td><span class="t">Foundations: how models are trained</span>
-  Intensive training in the fundamentals that everything else stands on: how learning works (loss, gradients, backpropagation), language modeling and tokenization, the transformer as a machine you can count, agentic AI, model evaluation, and synthetic data generation. Weekly hands-on sessions: every concept is implemented small before it is used big.</td>
-  <td class="deliv">A shared foundation across the team; working implementations of the core mechanisms (training loop, tokenizer, attention, evaluation harness) written by each engineer.</td>
-  <td class="mat">
-    <span class="lbl">Book</span>
-    <ul>
-      <li><a href="pdf/ch01_programs.pdf">Ch. 1 — Programs you don't write</a></li>
-      <li><a href="pdf/ch02_language_modeling.pdf">Ch. 2 — Language modeling</a></li>
-      <li><a href="pdf/ch03_transformer.pdf">Ch. 3 — The transformer, mechanically</a></li>
-      <li><a href="pdf/ch04_training_loop.pdf">Ch. 4 — The training loop and the machine it runs on</a></li>
-      <li><a href="pdf/ch05_lifecycle.pdf">Ch. 5 — The lifecycle of an LLM</a></li>
-      <li><a href="pdf/ch06_costs.pdf">Ch. 6 — Why training is expensive</a></li>
-      <li><a href="pdf/ch08_compute_object.pdf">Ch. 8 — The transformer as a compute object</a></li>
-    </ul>
-    <span class="lbl">Papers</span>
-    <ul>
-      <li><a href="https://arxiv.org/pdf/1706.03762">Attention Is All You Need</a> — Vaswani et al., 2017<br><span class="url">arxiv.org/pdf/1706.03762</span></li>
-    </ul>
-    <span class="lbl">Blogs</span>
-    <ul>
-      <li><a href="https://github.com/omar-florez/scratch_mlp">One LEGO at a time: the math of how neural networks learn</a> — backprop from scratch, with code<br><span class="url">github.com/omar-florez/scratch_mlp</span></li>
-    </ul>
-    <span class="lbl">Interactive</span>
-    <ul>
-      <li><a href="interactive/gradient-descent.html">Gradient descent playground</a></li>
-      <li><a href="interactive/backprop.html">Forward &amp; backward, step by step</a></li>
-      <li><a href="interactive/bpe.html">BPE, one merge at a time</a></li>
-      <li><a href="interactive/param-counter.html">The parameter counter</a></li>
-      <li><a href="interactive/rope.html">RoPE: positions as rotations</a></li>
-      <li><a href="interactive/attention.html">The attention zoo (MHA · FlashAttention · GQA · MQA · MLA · SWA)</a></li>
-      <li><a href="interactive/hero3d_lego.html">Backprop in 3D — one brick at a time (Three.js)</a></li>
-      <li><a href="interactive/gpu-memory.html">The GPU memory hierarchy: tiles on the move (HBM → L2 → SRAM → registers)</a></li>
-    </ul>
-    <span class="lbl">Videos</span>
-    <ul>
-      <li><a href="https://learn.deeplearning.ai/courses/finetuning-large-language-models/">Finetuning Large Language Models</a> — DeepLearning.AI course</li>
-      <li><span class="soon">session recordings coming soon</span></li>
-    </ul>
-    <span class="lbl">Labs (Colab)</span>
-    <ul>
-      <li><a href="labs/lab_pytorch.ipynb">Lab 0a · PyTorch from zero</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/lab_pytorch.ipynb">open ▸</a></li>
-      <li><a href="labs/lab_huggingface.ipynb">Lab 0b · Hugging Face, full cycle</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/lab_huggingface.ipynb">open ▸</a></li>
-      <li><a href="labs/ch01_programs.ipynb">Ch. 1 notebook</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch01_programs.ipynb">open ▸</a></li>
-      <li><a href="labs/ch02_language_modeling.ipynb">Ch. 2 notebook</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch02_language_modeling.ipynb">open ▸</a></li>
-      <li><a href="labs/ch03_transformer.ipynb">Ch. 3 notebook</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch03_transformer.ipynb">open ▸</a></li>
-    </ul>
-  </td>
-</tr>
-<tr>
-  <td class="ph">2<small>Months 2–3</small></td>
-  <td><span class="t">A data generation &amp; validation pipeline</span>
-  Design and build a reproducible pipeline for producing training data — including synthetic data (instructions, dialogues, reasoning traces) — and for validating its quality: deduplication, quality filtering, factual checks, model-as-judge review, and human sampling. Dataset versioning and traceability from day one.</td>
-  <td class="deliv">An operating data pipeline with quality metrics and versioned datasets, ready to feed training.</td>
-  <td class="mat">
-    <span class="lbl">Book</span>
-    <ul>
-      <li><span class="soon">Ch. 10 — Data is the cheapest efficiency lever · in progress</span></li>
-      <li><span class="soon">Ch. 11 — Validating data: judges, humans, and what the base model already knows · planned</span></li>
-      <li><span class="soon">Ch. 12 — Tokenizers and the hidden tax · planned</span></li>
-      <li><a href="pdf/ch27_synthetic.pdf">Ch. 27 — Synthetic data</a></li>
-    </ul>
-    <span class="lbl">Papers</span>
-    <ul>
-      <li><a href="https://arxiv.org/abs/2406.17557">The FineWeb Datasets</a> — Penedo et al., 2024<br><span class="url">arxiv.org/abs/2406.17557</span></li>
-      <li><a href="https://arxiv.org/abs/2406.11794">DataComp-LM (DCLM)</a> — Li et al., 2024<br><span class="url">arxiv.org/abs/2406.11794</span></li>
-      <li><a href="https://arxiv.org/abs/2402.00159">Dolma: an open corpus of three trillion tokens</a> — Soldaini et al., 2024<br><span class="url">arxiv.org/abs/2402.00159</span></li>
-      <li><a href="https://arxiv.org/abs/2107.06499">Deduplicating Training Data Makes Language Models Better</a> — Lee et al., 2021 (MinHash)<br><span class="url">arxiv.org/abs/2107.06499</span></li>
-      <li><a href="https://arxiv.org/abs/2306.05685">Judging LLM-as-a-Judge with MT-Bench</a> — Zheng et al., 2023<br><span class="url">arxiv.org/abs/2306.05685</span></li>
-      <li><a href="https://arxiv.org/abs/2310.16789">Detecting Pretraining Data (Min-K% Prob)</a> — Shi et al., 2023<br><span class="url">arxiv.org/abs/2310.16789</span></li>
-      <li><a href="https://arxiv.org/abs/2311.04850">Rethinking Benchmark and Contamination with Rephrased Samples</a> — Yang et al., 2023<br><span class="url">arxiv.org/abs/2311.04850</span></li>
-    </ul>
-    <span class="lbl">Blogs</span>
-    <ul>
-      <li><a href="https://huggingface.co/spaces/HuggingFaceFW/blogpost-fineweb-v1">FineWeb: decanting the web for the finest text data at scale</a> — Hugging Face</li>
-      <li><a href="https://allenai.org/blog/dolma">Dolma: 3 trillion tokens of open data for LM pretraining</a> — AI2</li>
-      <li><a href="https://huggingface.co/blog/clefourrier/llm-evaluation">Let's talk about LLM evaluation</a> — Clémentine Fourrier (judges, contamination)</li>
-    </ul>
-    <span class="lbl">Labs (Colab)</span>
-    <ul><li><span class="soon">Lab 10 · the minimal data pipeline: stream from HF → dedup → filter → decontaminate → dataset card · coming with Ch. 10</span></li></ul>
-    <span class="lbl">Videos</span>
-    <ul><li><span class="soon">coming soon</span></li></ul>
-  </td>
-</tr>
-<tr>
-  <td class="ph">3<small>Months 3–4</small></td>
-  <td><span class="t">A training &amp; fine-tuning pipeline</span>
-  Build a standardized training pipeline on open models: supervised fine-tuning, LoRA/QLoRA, and alignment (DPO) as the use case requires. Experiment tracking, checkpoints, metric logging, and GPU cost discipline — the pipeline should make the efficient path the default path.</td>
-  <td class="deliv">An end-to-end, reproducible fine-tuning pipeline, with at least one model adapted to a pilot domain.</td>
-  <td class="mat">
-    <span class="lbl">Book</span>
-    <ul>
-      <li><span class="soon">Ch. 23 — SFT done cheaply · planned</span></li>
-      <li><a href="pdf/ch16_packing.pdf">Ch. 16 — Sequence packing</a></li>
-    </ul>
-    <span class="lbl">Written &amp; live</span>
-    <ul>
-      <li><a href="pdf/ch13_attention.pdf">Ch. 13 — Making attention cheap</a></li>
-      <li><a href="pdf/ch14_parallelism.pdf">Ch. 14 — Distributing the model</a></li>
-      <li><a href="pdf/ch21_context.pdf">Ch. 21 — Extending context</a></li>
-      <li><a href="pdf/ch25_rl_reasoning.pdf">Ch. 25 — RL for reasoning (GRPO · veRL)</a></li>
-      <li><a href="pdf/ch26_distillation.pdf">Ch. 26 — Distillation</a></li>
-      <li><a href="interactive/attention.html">The attention zoo</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/ch13_attention.ipynb">Ch. 13 lab ▸</a></li>
-    </ul>
-    <span class="lbl">Papers</span>
-    <ul><li><span class="soon">coming soon</span></li></ul>
-    <span class="lbl">Blogs</span>
-    <ul><li><span class="soon">coming soon</span></li></ul>
-    <span class="lbl">Videos</span>
-    <ul><li><span class="soon">coming soon</span></li></ul>
-  </td>
-</tr>
-<tr>
-  <td class="ph">4<small>Months 4–5</small></td>
-  <td><span class="t">A benchmarking pipeline</span>
-  Build the benchmarks that measure what your users actually need — knowledge and reasoning in the domains that matter (regulation, banking, code) — and automate the evaluation: a benchmark harness, per-capability metrics, judge-based evaluation, and reports that are comparable across models and versions.</td>
-  <td class="deliv">A benchmark suite per domain and an automated evaluation pipeline that any model can be run through.</td>
-  <td class="mat">
-    <span class="lbl">Book</span>
-    <ul>
-      <li><a href="pdf/ch28_safety.pdf">Ch. 28 — Safety, refusals, and calibration</a></li>
-      <li><a href="pdf/ch09_evals.pdf">Ch. 9 — How you'll know it's working</a></li>
-    </ul>
-    <span class="lbl">Papers</span>
-    <ul><li><span class="soon">coming soon</span></li></ul>
-    <span class="lbl">Blogs</span>
-    <ul><li><span class="soon">coming soon</span></li></ul>
-    <span class="lbl">Videos</span>
-    <ul><li><span class="soon">coming soon</span></li></ul>
-  </td>
-</tr>
-<tr>
-  <td class="ph">5<small>Months 5–6</small></td>
-  <td><span class="t">A ranking of open models, per use case</span>
-  Close the loop: a pipeline that periodically evaluates the leading open models (Llama, Qwen, Mistral, DeepSeek, Gemma, and whatever ships next) against your benchmark suite and produces a living ranking per use case — weighing capability, inference cost, latency, license, and ease of deployment.</td>
-  <td class="deliv">A living model ranking with a dashboard and actionable model-selection guidance, maintained by the team that built it.</td>
-  <td class="mat">
-    <span class="lbl">Book</span>
-    <ul><li><a href="pdf/ch07_scaling.pdf">Ch. 7 — Scaling laws for training &amp; inference</a></li></ul>
-    <span class="lbl">Papers</span>
-    <ul><li><span class="soon">coming soon</span></li></ul>
-    <span class="lbl">Blogs</span>
-    <ul><li><span class="soon">coming soon</span></li></ul>
-    <span class="lbl">Videos</span>
-    <ul><li><span class="soon">coming soon</span></li></ul>
-  </td>
-</tr>
-</tbody>
-</table>
-
-<p style="margin-top:26px"><b style="color:var(--accent)">Appendices</b> — <a href="pdf/appA_software_stack.pdf">A · The software stack</a> · <a href="pdf/appB_notation.pdf">B · Notation, conventions, and the running example</a></p>
-
-<div class="note">Materials on this page grow as the program runs: each phase gains book chapters, papers, blogs, session videos, and lab notebooks. If a link says <em>coming soon</em>, it is being written or recorded.</div>
-
-
-<footer>
-  Omar U. Florez, PhD · <a href="https://github.com/omar-florez/training-efficient-llms">Source on GitHub</a>
-</footer>
-
+<div id="config-bar">
+  <span>Arena URL:</span>
+  <input id="arena-url" type="text" placeholder="https://agent-coliseum.onrender.com" spellcheck="false">
+  <button id="connect-btn">Connect</button>
+  <span id="agent-count"></span>
 </div>
+
+<div id="main">
+  <div id="game-wrap"><!-- Phaser canvas injected here --></div>
+
+  <div id="match-panel">
+    <div id="no-match">
+      <div class="icon">⚔️</div>
+      <div class="title">Waiting for a match…</div>
+      <div class="sub">Agents will challenge each other<br>when they meet on the map</div>
+    </div>
+    <div id="match-header" style="display:none">
+      <div id="match-label">⚔️ CURRENT MATCH</div>
+      <div id="match-topic"></div>
+      <div id="match-vs"></div>
+    </div>
+    <div id="turn-separator" style="display:none"></div>
+    <div id="turn-cards"></div>
+  </div>
+</div>
+
+<div id="leaderboard">
+  <div id="lb-label">📊 LEADERBOARD</div>
+  <div id="lb-rows"></div>
+</div>
+
+<div id="winner-overlay">
+  <div id="winner-emoji"></div>
+  <div id="winner-name"></div>
+  <div id="winner-sub">🏆 LatAm Arena Champion</div>
+  <button id="winner-close" onclick="this.closest('#winner-overlay').classList.remove('show')">
+    View Results
+  </button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  CONFIG + STATE
+// ═══════════════════════════════════════════════════════
+let ARENA_URL = localStorage.getItem('coliseum_arena_url') || '';
+document.getElementById('arena-url').value = ARENA_URL;
+
+const TILE   = 32;
+const MAP_W  = 20;
+const MAP_H  = 15;
+const CVS_W  = MAP_W * TILE;   // 640
+const CVS_H  = MAP_H * TILE;   // 480
+
+const COLORS = [
+  0xe74c3c, 0x3498db, 0x2ecc71, 0xf39c12,
+  0x9b59b6, 0x1abc9c, 0xe67e22, 0xe91e63,
+];
+
+const gameAgents = {};         // agentId → Phaser objects
+let   colorCursor   = 0;
+const agentIndexMap = {};
+let   agentIndexCursor = 0;
+let   gameScene     = null;
+let   sseSource     = null;
+let   maxScore      = 1;
+let   currentMatchIds = null;  // { a, b }
+
+// ═══════════════════════════════════════════════════════
+//  PHASER
+// ═══════════════════════════════════════════════════════
+class ArenaScene extends Phaser.Scene {
+  constructor() { super('Arena'); }
+
+  create() {
+    gameScene = this;
+    this._drawTilemap();
+  }
+
+  // ── map ─────────────────────────────────────────────
+  _drawTilemap() {
+    const g = this.add.graphics();
+
+    // Checkerboard grass
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        g.fillStyle((x + y) % 2 === 0 ? 0x2d5a27 : 0x346830);
+        g.fillRect(x * TILE, y * TILE, TILE, TILE);
+      }
+    }
+
+    // Central horizontal path
+    g.fillStyle(0x8b7355);
+    for (let x = 0; x < MAP_W; x++) g.fillRect(x * TILE, 7 * TILE, TILE, TILE);
+
+    // Central vertical path
+    for (let y = 0; y < MAP_H; y++) g.fillRect(10 * TILE, y * TILE, TILE, TILE);
+
+    // Lighter path overlay
+    g.fillStyle(0xc8a87a, 0.35);
+    g.fillRect(0, 7 * TILE + 8, CVS_W, TILE - 16);
+    g.fillRect(10 * TILE + 8, 0, TILE - 16, CVS_H);
+
+    // Tree border
+    g.fillStyle(0x1a3d17);
+    for (let x = 0; x < MAP_W; x++) {
+      g.fillRoundedRect(x * TILE + 3, 3, TILE - 6, TILE - 6, 4);
+      g.fillRoundedRect(x * TILE + 3, (MAP_H - 1) * TILE + 3, TILE - 6, TILE - 6, 4);
+    }
+    for (let y = 1; y < MAP_H - 1; y++) {
+      g.fillRoundedRect(3, y * TILE + 3, TILE - 6, TILE - 6, 4);
+      g.fillRoundedRect((MAP_W - 1) * TILE + 3, y * TILE + 3, TILE - 6, TILE - 6, 4);
+    }
+
+    // Grid lines
+    g.lineStyle(0.5, 0x000000, 0.12);
+    for (let x = 0; x <= MAP_W; x++) g.lineBetween(x * TILE, 0, x * TILE, CVS_H);
+    for (let y = 0; y <= MAP_H; y++) g.lineBetween(0, y * TILE, CVS_W, y * TILE);
+
+    g.setDepth(0);
+  }
+
+  // ── agent lifecycle ──────────────────────────────────
+  spawnAgent(agentId, name, avatar, color, tx, ty) {
+    const px = tx * TILE + TILE / 2;
+    const py = ty * TILE + TILE / 2;
+
+    const container = this.add.container(px, py).setDepth(10);
+
+    // Shadow
+    const shadow = this.add.ellipse(0, 22, 38, 10, 0x000000, 0.35);
+
+    // Body
+    const body = this.add.circle(0, 0, 22, color);
+    body.setStrokeStyle(3, 0xffffff, 0.6);
+
+    // Avatar emoji
+    const emoji = this.add.text(0, 0, avatar, {
+      fontSize: '24px', resolution: 2,
+    }).setOrigin(0.5, 0.5);
+
+    // Name label
+    const label = this.add.text(0, 32, name.length > 14 ? name.substring(0, 13) + '…' : name, {
+      fontSize: '12px',
+      fontFamily: 'system-ui, sans-serif',
+      color: '#ffffff',
+      backgroundColor: '#000000bb',
+      padding: { x: 6, y: 3 },
+      resolution: 2,
+    }).setOrigin(0.5, 0);
+
+    // Battle ring (hidden initially)
+    const ring = this.add.circle(0, 0, 28, 0x000000, 0);
+    ring.setStrokeStyle(0, 0xffd700);
+
+    // Speech bubble (hidden)
+    const bubble = this._makeBubble();
+    bubble.setPosition(0, -46).setVisible(false);
+
+    container.add([shadow, ring, body, emoji, label, bubble]);
+
+    gameAgents[agentId] = { container, body, ring, bubble, label, emoji, color, tx, ty };
+
+    // Entrance
+    container.setAlpha(0).setScale(0);
+    this.tweens.add({
+      targets: container, alpha: 1, scaleX: 1, scaleY: 1,
+      duration: 500, ease: 'Back.easeOut',
+    });
+  }
+
+  _makeBubble() {
+    const c = this.add.container(0, 0);
+    const bg  = this.add.graphics();
+    const txt = this.add.text(0, 0, '', {
+      fontSize: '13px', fontFamily: 'system-ui, sans-serif',
+      color: '#ffffff', wordWrap: { width: 200 }, align: 'center',
+      resolution: 2,
+    }).setOrigin(0.5, 0.5);
+    c.add([bg, txt]);
+    c._bg  = bg;
+    c._txt = txt;
+    return c;
+  }
+
+  showBubble(agentId, text, hexColor, yExtra = 0) {
+    const a = gameAgents[agentId];
+    if (!a) return;
+    const { bubble } = a;
+    const txt = bubble._txt;
+    const bg  = bubble._bg;
+
+    const display = text.length > 80 ? text.substring(0, 77) + '…' : text;
+    txt.setText(display);
+
+    const w = Math.max(txt.width + 20, 80);
+    const h = txt.height + 18;
+    bg.clear();
+    bg.fillStyle(hexColor, 0.95);
+    bg.fillRoundedRect(-w / 2, -h / 2, w, h, 8);
+    // Tail
+    bg.fillTriangle(0, h / 2, -8, h / 2 + 12, 8, h / 2 + 12);
+
+    bubble.setPosition(0, -68 - yExtra).setVisible(true).setAlpha(0);
+    this.tweens.add({ targets: bubble, alpha: 1, duration: 200 });
+  }
+
+  hideBubble(agentId) {
+    const a = gameAgents[agentId];
+    if (!a) return;
+    this.tweens.add({
+      targets: a.bubble, alpha: 0, duration: 250,
+      onComplete: () => { if (a.bubble) a.bubble.setVisible(false); },
+    });
+  }
+
+  moveAgent(agentId, tx, ty) {
+    const a = gameAgents[agentId];
+    if (!a) return;
+    a.tx = tx; a.ty = ty;
+    this.tweens.add({
+      targets: a.container,
+      x: tx * TILE + TILE / 2,
+      y: ty * TILE + TILE / 2,
+      duration: 550,
+      ease: 'Sine.easeInOut',
+    });
+    // Squash on move
+    this.tweens.add({
+      targets: a.body, scaleX: 0.88, scaleY: 1.12,
+      duration: 150, yoyo: true,
+    });
+  }
+
+  activateRing(agentId) {
+    const a = gameAgents[agentId];
+    if (!a) return;
+    a.ring.setStrokeStyle(3, 0xffd700, 1);
+    this.tweens.add({
+      targets: a.ring, scaleX: 1.4, scaleY: 1.4,
+      duration: 700, yoyo: true, repeat: -1,
+    });
+  }
+
+  deactivateRing(agentId) {
+    const a = gameAgents[agentId];
+    if (!a) return;
+    this.tweens.killTweensOf(a.ring);
+    a.ring.setStrokeStyle(0, 0xffd700).setScale(1);
+    this.hideBubble(agentId);
+  }
+
+  eliminateAgent(agentId) {
+    const a = gameAgents[agentId];
+    if (!a) return;
+    const { x, y } = a.container;
+
+    // Spin and shrink
+    this.tweens.add({
+      targets: a.container, alpha: 0, scaleX: 0, scaleY: 0,
+      angle: 360, duration: 700, ease: 'Back.easeIn',
+      onComplete: () => { a.container.destroy(); delete gameAgents[agentId]; },
+    });
+
+    // Particle burst
+    for (let i = 0; i < 10; i++) {
+      const angle = (i / 10) * Math.PI * 2;
+      const p = this.add.circle(x, y, 4, a.color).setDepth(20);
+      this.tweens.add({
+        targets: p,
+        x: x + Math.cos(angle) * 50, y: y + Math.sin(angle) * 50,
+        alpha: 0, scale: 0, duration: 600,
+        onComplete: () => p.destroy(),
+      });
+    }
+
+    // 💥 text
+    const boom = this.add.text(x, y - 20, '💥', { fontSize: '28px' })
+                    .setOrigin(0.5).setDepth(20);
+    this.tweens.add({
+      targets: boom, y: y - 60, alpha: 0, duration: 700,
+      onComplete: () => boom.destroy(),
+    });
+  }
+}
+
+const game = new Phaser.Game({
+  type: Phaser.AUTO,
+  width: CVS_W,
+  height: CVS_H,
+  parent: 'game-wrap',
+  backgroundColor: '#1a3d17',
+  scene: ArenaScene,
+  roundPixels: true,
+  banner: false,
+});
+
+// Scale canvas to fit available height
+function fitCanvas() {
+  const avail = window.innerHeight - 108 - 80;   // header + config + leaderboard
+  const scale = Math.min(1, avail / CVS_H, (window.innerWidth * 0.62) / CVS_W);
+  const wrap  = document.getElementById('game-wrap');
+  wrap.style.width  = `${CVS_W * scale}px`;
+  wrap.style.height = `${CVS_H * scale}px`;
+  const canvas = wrap.querySelector('canvas');
+  if (canvas) {
+    canvas.style.width  = `${CVS_W * scale}px`;
+    canvas.style.height = `${CVS_H * scale}px`;
+  }
+}
+window.addEventListener('resize', fitCanvas);
+setTimeout(fitCanvas, 200);
+
+// ═══════════════════════════════════════════════════════
+//  EVENT HANDLERS
+// ═══════════════════════════════════════════════════════
+function route(type, payload) {
+  switch (type) {
+    case 'state':             onState(payload);           break;
+    case 'agent_accepted':    onAccepted(payload);        break;
+    case 'agent_eliminated':  onEliminated(payload);      break;
+    case 'agent_moved':       onMoved(payload);           break;
+    case 'match_start':       onMatchStart(payload);      break;
+    case 'thinking':          onThinking(payload);        break;
+    case 'question':          onQuestion(payload);        break;
+    case 'answer':            onAnswer(payload);          break;
+    case 'score':             onScore(payload);           break;
+    case 'match_end':         onMatchEnd(payload);        break;
+    case 'match_result':      onMatchResult(payload);     break;
+    case 'phase_change':      onPhase(payload.phase);     break;
+    case 'leaderboard_update':onLeaderboard(payload);     break;
+    case 'tournament_ended':  onTournamentEnd(payload);   break;
+    case 'agent_pending':     break;  // admin only
+  }
+}
+
+function onState(p) {
+  onPhase(p.phase);
+  const active = (p.agents || []).filter(a => a.status === 'active');
+  setCount(active.length);
+  p.agents.forEach(a => {
+    if (a.status === 'active') {
+      withScene(() => {
+        if (!gameAgents[a.agent_id]) {
+          const c = COLORS[colorCursor++ % COLORS.length];
+          if (!(p.agent_id in agentIndexMap)) agentIndexMap[p.agent_id] = agentIndexCursor++;
+          gameScene.spawnAgent(a.agent_id, a.name, a.avatar, c,
+                               a.position.x, a.position.y);
+        }
+      });
+    }
+  });
+  onLeaderboard(p);
+}
+
+function onAccepted(p) {
+  const c = COLORS[colorCursor++ % COLORS.length];
+  withScene(() => {
+    gameScene.spawnAgent(p.agent_id, p.name, p.avatar, c,
+                         p.position.x, p.position.y);
+  });
+  setCount(Object.keys(gameAgents).length + 1);
+}
+
+function onEliminated(p) {
+  withScene(() => gameScene.eliminateAgent(p.agent_id));
+}
+
+function onMoved(p) {
+  withScene(() => gameScene.moveAgent(p.agent_id, p.position.x, p.position.y));
+}
+
+function onMatchStart(p) {
+  currentMatchIds = { a: p.agent_a.id, b: p.agent_b.id };
+
+  // Show panel
+  document.getElementById('no-match').style.display      = 'none';
+  document.getElementById('match-header').style.display  = 'block';
+  document.getElementById('turn-separator').style.display = 'block';
+  // Add a match separator instead of clearing
+  const sep = document.createElement('div');
+  sep.style.cssText = 'text-align:center;font-size:10px;color:#484f58;padding:6px 0;border-top:1px solid #21262d;margin:4px 0;letter-spacing:2px;';
+  sep.textContent = '--- NEW MATCH ---';
+  document.getElementById('turn-cards').appendChild(sep);
+
+  document.getElementById('match-topic').textContent =
+    `📌 ${p.topic}`;
+  document.getElementById('match-vs').textContent =
+    `${p.agent_a.avatar} ${p.agent_a.name}  vs  ${p.agent_b.avatar} ${p.agent_b.name}`;
+
+  withScene(() => {
+    gameScene.activateRing(p.agent_a.id);
+    gameScene.activateRing(p.agent_b.id);
+  });
+}
+
+function onThinking(p) {
+  addCard('think', '🧠 THINKING', p.agent_name, `Turn ${p.turn}/${document._totalTurns||5}`,
+    'Thinking...', p.agent_id);
+  withScene(() => gameScene.showBubble(p.agent_id, '🧠…', 0x6b5ea0, 0));
+}
+
+function onQuestion(p) {
+  // Update last think card with scratchpad
+  const cards = document.getElementById('turn-cards');
+  const last = cards.lastElementChild;
+  if (last && last.dataset.type === 'think') {
+    last.querySelector('.card-text').innerHTML = formatScratchpad(p.scratchpad || '') || 'Thinking...';
+  }
+  addCard('question', '❓ QUESTION', p.asker_name, `Turn ${p.turn}`, p.question, p.asker_id);
+  withScene(() => gameScene.showBubble(p.asker_id,
+    '❓ ' + p.question.substring(0, 60), 0xb07d1a, 0));
+}
+
+function onAnswer(p) {
+  addCard('answer', '💬 ANSWER', p.answerer_name, `Turn ${p.turn}`, p.answer, p.answerer_id);
+  withScene(() => gameScene.showBubble(p.answerer_id,
+    '💬 ' + p.answer.substring(0, 60), 0x2a7a7a, 0));
+}
+
+function onScore(p) {
+  const scores = Object.entries(p.running_scores)
+    .map(([id, s]) => `${id.substring(0,4)}: ${s}pts`).join('  |  ');
+  addCard('score', '⭐ JUDGE', 'Judge', `Turn ${p.turn}`,
+    `${p.score}/10 — ${p.reason}\n\n${scores}`);
+}
+
+function onMatchEnd(p) {
+  if (currentMatchIds) {
+    withScene(() => {
+      gameScene.deactivateRing(currentMatchIds.a);
+      gameScene.deactivateRing(currentMatchIds.b);
+    });
+    currentMatchIds = null;
+  }
+  // Keep match history visible — do not clear on match end
+}
+
+function onMatchResult(p) {
+  const w = p.winner, l = p.loser;
+  const text = w.avatar+' '+w.name+' scored '+w.score+' pts\n'+l.avatar+' '+l.name+' scored '+l.score+' pts\n\nWinner: '+w.avatar+' '+w.name;
+  addCard('result', '🏆 MATCH RESULT', 'Arena', p.topic||'', text);
+}
+
+function onPhase(phase) {
+  const badge = document.getElementById('phase-badge');
+  badge.textContent = phase.toUpperCase();
+  badge.className   = phase;
+}
+
+function onLeaderboard(p) {
+  const agents = p.agents || [];
+  if (!agents.length) return;
+  maxScore = Math.max(maxScore, ...agents.map(a => a.score || 0), 1);
+
+  const ranks  = ['🥇','🥈','🥉'];
+  const barClr = ['#ffd700','#c0c0c0','#cd7f32','#3fb950','#58a6ff','#bc8cff','#ff7b72','#f0883e'];
+  const rows   = document.getElementById('lb-rows');
+  rows.innerHTML = '';
+
+  agents.forEach((a, i) => {
+    const elim = a.status === 'eliminated';
+    const row  = document.createElement('div');
+    row.className = 'lb-row' + (elim ? ' elim' : '');
+    const pct  = Math.max(3, Math.round((a.score / maxScore) * 100));
+    const clr  = elim ? '#f85149' : (barClr[i % barClr.length]);
+    row.innerHTML = `
+      <span class="lb-rank">${elim ? '💀' : (ranks[i] || i+1)}</span>
+      <span class="lb-avatar">${a.avatar}</span>
+      <span class="lb-name">${esc(a.name)}</span>
+      <div class="lb-bar-wrap"><div class="lb-bar" style="width:${pct}%;background:${clr}"></div></div>
+      <span class="lb-score" style="color:${elim?'#484f58':clr}">${a.score}</span>
+      <span class="lb-record">${a.wins}W/${a.losses}L</span>`;
+    rows.appendChild(row);
+  });
+}
+
+function onTournamentEnd(p) {
+  onPhase('ended');
+  // Add tournament end marker to trace history
+  const cards = document.getElementById('turn-cards');
+  const endDiv = document.createElement('div');
+  endDiv.style.cssText = 'text-align:center;padding:10px;background:#081a08;border:1px solid #3fb950;border-radius:6px;margin-top:8px;';
+  endDiv.innerHTML = p.winner
+    ? '<div style="color:#3fb950;font-weight:700;font-size:13px">🏆 TOURNAMENT ENDED</div>'
+      + '<div style="color:#8b949e;font-size:11px;margin-top:4px">Winner: '
+      + esc(p.winner.avatar) + ' ' + esc(p.winner.name)
+      + ' · Score: ' + p.winner.score + '</div>'
+    : '<div style="color:#484f58;font-size:12px">Tournament ended — no winner</div>';
+  cards.appendChild(endDiv);
+  endDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+
+  if (p.winner) {
+    document.getElementById('winner-emoji').textContent = p.winner.avatar;
+    document.getElementById('winner-name').textContent  = p.winner.name;
+    document.getElementById('winner-overlay').classList.add('show');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════════════
+function addCard(type, label, agent, turn, text, agentId) {
+  const cards = document.getElementById('turn-cards');
+  const div = document.createElement('div');
+  div.className = `turn-card card-${type}`;
+  div.dataset.type = type;
+  if (agentId && agentId in agentIndexMap) {
+    div.dataset.agentIdx = agentIndexMap[agentId];
+  }
+  div.innerHTML = `
+    <div class="card-label">${label}</div>
+    <div class="card-agent"><span class="agent-name-badge">${esc(agent)}</span><span class="turn-badge">${esc(turn)}</span></div>
+    <div class="card-text">${esc(text)}</div>`;
+  cards.appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+function formatScratchpad(raw) {
+  if (!raw) return '';
+  const steps = ['SITUATION','OPPONENT','GOAL','DRAFT','CRITIQUE','FINAL'];
+  const icons  = {SITUATION:'&#128269;',OPPONENT:'&#128100;',GOAL:'&#127919;',DRAFT:'&#9999;&#65039;',CRITIQUE:'&#128260;',FINAL:'&#9989;'};
+  const lines  = raw.split('\n');
+  let out = '';
+  for (const line of lines) {
+    const clean = line.replace(/\*\*/g,'').trim();
+    for (const step of steps) {
+      if (clean.toUpperCase().startsWith(step)) {
+        let content = clean.slice(step.length).replace(/^\s*\[.*?\]\s*:?\s*/,'').replace(/^[:\s]+/,'').trim();
+        const dot = content.search(/[.!?]/);
+        if (dot > 0) content = content.slice(0, dot+1);
+        if (content) {
+          out += '<div class="scratchpad-step"><span class="scratchpad-label">' + (icons[step]||'') + ' ' + step + '</span><span class="scratchpad-text"> ' + esc(content) + '</span></div>';
+        }
+        break;
+      }
+    }
+  }
+  return out || esc(raw.substring(0,300));
+}
+
+function setCount(n) {
+  document.getElementById('agent-count').textContent =
+    n > 0 ? `${n} agent${n > 1 ? 's' : ''} active` : '';
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                  .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function withScene(fn) {
+  if (gameScene) fn();
+  else setTimeout(() => withScene(fn), 80);
+}
+
+// ═══════════════════════════════════════════════════════
+//  SSE CONNECTION
+// ═══════════════════════════════════════════════════════
+function connect(url) {
+  if (sseSource) sseSource.close();
+  ARENA_URL = url.replace(/\/$/, '').trim();
+  localStorage.setItem('coliseum_arena_url', ARENA_URL);
+
+  const dot  = document.getElementById('conn-dot');
+  const text = document.getElementById('conn-text');
+  dot.className  = '';
+  text.textContent = 'Connecting…';
+
+  sseSource = new EventSource(`${ARENA_URL}/stream`);
+
+  sseSource.onopen = () => {
+    dot.className    = 'connected';
+    text.textContent = 'Live';
+  };
+
+  sseSource.onmessage = (e) => {
+    try {
+      const ev = JSON.parse(e.data);
+      if (ev.type !== 'ping') route(ev.type, ev.payload);
+    } catch {}
+  };
+
+  sseSource.onerror = () => {
+    dot.className    = 'error';
+    text.textContent = 'Disconnected – retrying';
+  };
+}
+
+document.getElementById('connect-btn').addEventListener('click', () => {
+  const url = document.getElementById('arena-url').value.trim();
+  if (url) connect(url);
+});
+document.getElementById('arena-url').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('connect-btn').click();
+});
+
+if (ARENA_URL) connect(ARENA_URL);
+
+// ── Replay receiver (from admin panel BroadcastChannel) ───────────────────
+const replayChannel = new BroadcastChannel('coliseum_replay');
+replayChannel.onmessage = (e) => {
+  try {
+    const ev = e.data;
+    if (ev && ev.type && ev.type !== 'ping') {
+      route(ev.type, ev.payload);
+    }
+  } catch {}
+};
+</script>
 </body>
 </html>
