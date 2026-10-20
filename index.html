@@ -141,8 +141,8 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
   <td class="mat">
     <span class="lbl">Book</span>
     <ul>
-      <li><span class="soon">Ch. 10 — Data is the cheapest efficiency lever · in progress</span></li>
-      <li><span class="soon">Ch. 11 — Validating data: judges, humans, and what the base model already knows · planned</span></li>
+      <li><a href="pdf/ch10_data.pdf">Ch. 10 — Data is the cheapest efficiency lever</a></li>
+      <li><a href="pdf/ch11_validating.pdf">Ch. 11 — Validating data: what to keep, and what the model already knows</a></li>
       <li><span class="soon">Ch. 12 — Tokenizers and the hidden tax · planned</span></li>
       <li><a href="pdf/ch27_synthetic.pdf">Ch. 27 — Synthetic data</a></li>
     </ul>
@@ -163,7 +163,11 @@ footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px;color:v
       <li><a href="https://huggingface.co/blog/clefourrier/llm-evaluation">Let's talk about LLM evaluation</a> — Clémentine Fourrier (judges, contamination)</li>
     </ul>
     <span class="lbl">Labs (Colab)</span>
-    <ul><li><span class="soon">Lab 10 · the minimal data pipeline: stream from HF → dedup → filter → decontaminate → dataset card · coming with Ch. 10</span></li></ul>
+    <ul>
+      <li><a href="labs/lab10_data_pipeline.ipynb">Lab 10 · the minimal data pipeline: stream from HF → dedup → filter → decontaminate → difficulty score → dataset card</a> · <a href="https://colab.research.google.com/github/omar-florez/training-efficient-llms/blob/main/labs/lab10_data_pipeline.ipynb">open ▸</a></li>
+      <li><span class="soon">Lab 11 · validating the slice: BETR-lite selection, judge calibration, Min-K% / IFD / pass-rate audits · coming</span></li>
+      <li><span class="soon">Lab 27 · synthesis: structured rephrasing and Active Reading with a 1.7B generator · coming</span></li>
+    </ul>
     <span class="lbl">Videos</span>
     <ul><li><span class="soon">coming soon</span></li></ul>
   </td>

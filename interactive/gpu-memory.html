@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GPU Memory Hierarchy: Tiles on the Move · Training Efficient LLMs</title>
+<style>
+:root{--ink:#1a1a1a;--mute:#5c5c5c;--rule:#d9d9d9;--soft:#f2f5f9;--bg:#fdfdfb;--accent:#17406b;--accent2:#3f74b8;--hl:#b45309}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-size:17px;line-height:1.6}
+.page{max-width:1180px;margin:0 auto;padding:36px 24px 70px}
+.kicker{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2)}
+h1{font-size:30px;margin:6px 0 4px;color:var(--accent);letter-spacing:-.01em;border-bottom:2px solid var(--accent);padding-bottom:12px}
+p{margin:0 0 14px;max-width:960px}
+.panel{background:#fff;border:1px solid var(--rule);border-radius:6px;padding:16px 18px;margin:18px 0}
+.controls{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;font-family:system-ui,sans-serif;font-size:14px;margin-bottom:8px}
+button{font-family:system-ui,sans-serif;font-size:13.5px;padding:6px 14px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:4px;cursor:pointer}
+button.sec{background:#fff;color:var(--accent)}
+button.on{background:var(--hl);border-color:var(--hl)}
+input[type=range]{width:130px;accent-color:var(--accent2)}
+#msg{font-family:system-ui,sans-serif;font-size:15px;min-height:44px;margin:8px 0 10px;padding:9px 14px;background:var(--soft);border-left:3px solid var(--accent2);border-radius:0 4px 4px 0}
+#msg b{color:var(--accent)}
+svg{display:block;max-width:100%;height:auto}
+.svgt{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-family:system-ui,sans-serif;font-size:13.5px;margin-top:10px}
+.stat{border:1px solid var(--rule);border-radius:5px;padding:8px 12px;background:#fff}
+.stat .k{color:var(--mute);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase}
+.stat .v{font-size:20px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.stat.warn .v{color:var(--hl)}
+.note{font-size:14.5px;color:var(--mute)}
+footer{margin-top:30px;border-top:1px solid var(--rule);padding-top:12px;font-family:system-ui,sans-serif;font-size:13.5px;color:var(--mute)}
+footer a{color:var(--accent2)}
+@media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="kicker">Omar U. Florez, PhD · Training Efficient LLMs · Interactive</div>
+<h1>The memory hierarchy, and why tiles are the whole game</h1>
+
+<p>A GPU is a pyramid of memories. At the bottom, HBM — 80 GB, but only 3.2 TB/s away. At the top, the registers next to each core — 100+ TB/s, but 256 KB per SM. Every kernel's speed is decided by one question: <em>how many times does each byte cross the slow edge of the pyramid?</em> This animation runs a tiled matrix multiply <span style="font-family:ui-monospace,Menlo,monospace">C = A · B</span> across three streaming multiprocessors and lets you watch tiles climb the hierarchy — then flip to the naive kernel and watch the same math drown in HBM traffic.</p>
+
+<div class="panel">
+  <div class="controls">
+    <button id="play">▶ Play</button>
+    <button class="sec" id="step">Step</button>
+    <button class="sec" id="reset">Reset</button>
+    <span style="margin-left:8px">mode:</span>
+    <button class="sec on" id="mTiled">tiled — accumulate in registers</button>
+    <button class="sec" id="mNaive">naive — round-trip HBM every step</button>
+    <label style="margin-left:auto">speed <input type="range" id="speed" min="0.3" max="3" step="0.1" value="1"></label>
+  </div>
+  <div id="msg">Press <b>Play</b>. Three SMs each own one output tile of C; every tile of A and B they need must climb from HBM.</div>
+  <svg id="g" viewBox="0 0 1180 640" aria-label="GPU memory hierarchy animation: three streaming multiprocessors with registers, cores and shared memory above an L2 cache and HBM global memory; tiles of matrices A and B move from HBM through L2 into shared memory and registers, are multiplied by the cores, and the result tile is written back"></svg>
+  <div class="stats">
+    <div class="stat"><div class="k">HBM bytes moved (this run)</div><div class="v" id="sHbm">0 KB</div></div>
+    <div class="stat"><div class="k">on-chip bytes moved</div><div class="v" id="sChip">0 KB</div></div>
+    <div class="stat"><div class="k">tile-steps completed</div><div class="v" id="sSteps">0</div></div>
+    <div class="stat warn"><div class="k">HBM traffic vs tiled</div><div class="v" id="sRatio">1.0×</div></div>
+  </div>
+  <p class="note" style="margin:12px 0 0" id="model"></p>
+</div>
+
+<p class="note">Bandwidths and sizes are H100 SXM class figures as drawn on the source slide: registers/SRAM 100+ TB/s (256 KB per SM × 132 SMs ≈ 33.8 MB), shared memory / L1 ≈ 25 TB/s, L2 ≈ 12 TB/s (50 MB), HBM 3.2–3.35 TB/s (80 GB). Animation timings are proportional to 1/bandwidth, so a tile visibly crawls across the HBM link and sprints inside the SM. The chapter view: §4.5 (the hierarchy), §8.4 (the roofline), Ch. 13 (FlashAttention is this animation applied to attention).</p>
+
+<footer>Built by <b>Omar U. Florez, PhD</b> · part of <a href="../index.html">Efficient Training of LLMs</a> · Related: <a href="attention.html">the attention zoo (FlashAttention tab)</a></footer>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const NAVY='#17406b', BLUE='#3f74b8', AMB='#b45309', TEAL='#1f7a86', TEALD='#155a63', PINK='#e0578a', PINKD='#b73a6a', PURP='#8e6cc9', ORNG='#e8862e', LT='#dbe7f6';
+const svg=$('g');
+const T=4;                       // tiles per matrix side (N/T = 4 → 4 k-steps)
+const TILE_KB=32;                // 128×128 bf16 tile = 32 KB
+let mode='tiled', playing=false, speed=1, timer=null;
+
+// ---------- static layout ----------
+const SMS=[{x:60,tile:[0,0]},{x:330,tile:[1,1]},{x:600,tile:[2,2]}];   // three SMs, their C tiles
+const SMW=230, SMY=120, SMH=230;
+const L2Y=392, HBMY=452;
+const HBM={x:60,y:HBMY,w:790,h:150};
+// tile grids inside HBM: A, B, C
+const GRID={A:{x:90,y:HBMY+34},B:{x:330,y:HBMY+34},C:{x:570,y:HBMY+34}};
+const TS=22, TG=3;               // tile pixel size, gap
+const tilePos=(m,i,j)=>({x:GRID[m].x+j*(TS+TG),y:GRID[m].y+i*(TS+TG)});
+
+function base(){
+  const s=[];
+  s.push(`<defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${NAVY}"/></marker>
+    <filter id="glow"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>`);
+  // pyramid (right)
+  s.push(`<g class="svgt">
+    <polygon points="1010,60 1130,190 890,190" fill="${PINK}" opacity=".85"/>
+    <polygon points="1010,60 1060,118 960,118" fill="#8fd6e0"/>
+    <text x="1010" y="104" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">SRAM</text>
+    <text x="1010" y="160" text-anchor="middle" fill="#fff" font-weight="700" font-size="14">HBM</text>
+    <text x="1010" y="42" text-anchor="middle" fill="${NAVY}" font-weight="700" font-size="12">100+ TB/s · 33.8 MB</text>
+    <text x="1010" y="210" text-anchor="middle" fill="${NAVY}" font-weight="700" font-size="12">3.2 TB/s · 80 GB</text>
+    <line x1="872" y1="190" x2="872" y2="60" stroke="${NAVY}" stroke-width="1.6" marker-end="url(#ar)"/>
+    <text x="862" y="130" text-anchor="middle" fill="${NAVY}" font-size="11" transform="rotate(-90 862 130)">faster · smaller</text>
+  </g>`);
+  // legend bar (right, under pyramid)
+  s.push(`<g class="svgt" font-size="11.5">
+    <rect x="880" y="236" width="270" height="110" rx="6" fill="#fff" stroke="${AMB}" stroke-width="1.4"/>
+    <text x="894" y="258" font-weight="700" fill="${AMB}">the hierarchy, top to bottom</text>
+    <text x="894" y="280" fill="${NAVY}">registers (SRAM) <tspan font-weight="700">100+ TB/s</tspan></text>
+    <text x="894" y="298" fill="${NAVY}">shared memory / L1 <tspan font-weight="700">25 TB/s</tspan></text>
+    <text x="894" y="316" fill="${NAVY}">L2 cache <tspan font-weight="700">12 TB/s</tspan> · 50 MB</text>
+    <text x="894" y="334" fill="${NAVY}">HBM (global) <tspan font-weight="700">3.2 TB/s</tspan> · 80 GB</text>
+  </g>`);
+  // SMs
+  SMS.forEach((sm,n)=>{
+    const x=sm.x;
+    s.push(`<g class="svgt">
+      <rect x="${x}" y="${SMY}" width="${SMW}" height="${SMH}" rx="10" fill="${TEAL}" stroke="${TEALD}" stroke-width="2"/>
+      <text x="${x+SMW/2}" y="${SMY+16}" text-anchor="middle" fill="#fff" font-weight="700" font-size="12">SM ${n} — owns C[${sm.tile[0]},${sm.tile[1]}]</text>
+      <rect x="${x+12}" y="${SMY+24}" width="${SMW-24}" height="16" rx="3" fill="${PINK}"/><text x="${x+SMW/2}" y="${SMY+36}" text-anchor="middle" fill="#fff" font-size="10.5">Control</text>
+      <rect x="${x+12}" y="${SMY+44}" width="${SMW-24}" height="40" rx="3" fill="#8fd6e0" id="reg${n}"/>
+      <text x="${x+20}" y="${SMY+58}" fill="${NAVY}" font-size="10.5" font-weight="700">Registers</text>
+      <text x="${x+20}" y="${SMY+76}" fill="${NAVY}" font-size="10">accumulator C[${sm.tile[0]},${sm.tile[1]}]:</text>
+      <rect x="${x+150}" y="${SMY+52}" width="${TS+4}" height="${TS+4}" rx="3" fill="#fff" stroke="${NAVY}" id="acc${n}"/>
+      <text x="${x+150+13}" y="${SMY+69}" text-anchor="middle" fill="${NAVY}" font-size="10" font-weight="700" id="accT${n}">0</text>
+      <text x="${x+188}" y="${SMY+69}" fill="${NAVY}" font-size="10" id="accK${n}">k=–</text>
+      <g id="cores${n}">${[0,1,2,3].map(c=>`<rect x="${x+14+c*54}" y="${SMY+92}" width="48" height="18" rx="3" fill="${ORNG}"/><rect x="${x+14+c*54}" y="${SMY+114}" width="48" height="18" rx="3" fill="${ORNG}"/><text x="${x+38+c*54}" y="${SMY+105}" text-anchor="middle" fill="#fff" font-size="10">Core</text><text x="${x+38+c*54}" y="${SMY+127}" text-anchor="middle" fill="#fff" font-size="10">Core</text>`).join('')}</g>
+      <rect x="${x+12}" y="${SMY+140}" width="${SMW-24}" height="16" rx="3" fill="${PURP}"/><text x="${x+SMW/2}" y="${SMY+152}" text-anchor="middle" fill="#fff" font-size="10.5">Constant Cache</text>
+      <rect x="${x+12}" y="${SMY+162}" width="150" height="58" rx="3" fill="${PURP}"/>
+      <text x="${x+20}" y="${SMY+176}" fill="#fff" font-size="10.5" font-weight="700">Shared Memory</text>
+      <text x="${x+20}" y="${SMY+190}" fill="#eee" font-size="9.5">A tile · B tile (staged)</text>
+      <rect x="${x+22}" y="${SMY+194}" width="${TS+2}" height="${TS+2}" rx="2" fill="#fff" opacity=".35"/>
+      <rect x="${x+56}" y="${SMY+194}" width="${TS+2}" height="${TS+2}" rx="2" fill="#fff" opacity=".35"/>
+      <rect x="${x+168}" y="${SMY+162}" width="50" height="58" rx="3" fill="${PURP}"/>
+      <text x="${x+193}" y="${SMY+188}" text-anchor="middle" fill="#fff" font-size="10.5">L1</text>
+      <text x="${x+193}" y="${SMY+202}" text-anchor="middle" fill="#fff" font-size="10.5">Cache</text>
+    </g>`);
+  });
+  // L2 + HBM
+  s.push(`<g class="svgt">
+    <rect x="60" y="${L2Y}" width="790" height="34" rx="6" fill="${PINK}" opacity=".9"/>
+    <text x="455" y="${L2Y+22}" text-anchor="middle" fill="#fff" font-weight="700" font-size="12">L2 Cache (50 MB) · 12 TB/s</text>
+    <rect x="${HBM.x}" y="${HBM.y}" width="${HBM.w}" height="${HBM.h}" rx="8" fill="${PINK}" opacity=".9"/>
+    <text x="455" y="${HBM.y+18}" text-anchor="middle" fill="#fff" font-weight="700" font-size="12">Global Memory — HBM (80 GB) · 3.2 TB/s</text>
+    <text x="${GRID.A.x+48}" y="${HBM.y+140}" text-anchor="middle" fill="#fff" font-size="11">A (4×4 tiles)</text>
+    <text x="${GRID.B.x+48}" y="${HBM.y+140}" text-anchor="middle" fill="#fff" font-size="11">B (4×4 tiles)</text>
+    <text x="${GRID.C.x+48}" y="${HBM.y+140}" text-anchor="middle" fill="#fff" font-size="11">C = A·B (result)</text>
+    <text x="870" y="${L2Y+22}" fill="${NAVY}" font-size="11" font-weight="700">SM ↔ L2 ↔ HBM</text>
+  </g>`);
+  // tile grids
+  for(const m of ['A','B','C']) for(let i=0;i<T;i++) for(let j=0;j<T;j++){
+    const p=tilePos(m,i,j);
+    const fill = m==='C' ? '#fff' : (m==='A' ? '#ffd9c2' : '#cfe6ff');
+    s.push(`<rect id="t${m}${i}${j}" x="${p.x}" y="${p.y}" width="${TS}" height="${TS}" rx="3" fill="${fill}" stroke="#fff" stroke-width="1"/>`);
+  }
+  // moving layer
+  s.push(`<g id="mv"></g>`);
+  return s.join('');
+}
+svg.innerHTML=base();
+const mv=$('mv');
+
+// ---------- animation engine ----------
+let queue=[];              // list of async steps
+let hbmB=0, chipB=0, steps=0, running=false, cancel=false;
+const fmt=kb=> kb>=1024? (kb/1024).toFixed(2)+' MB' : kb.toFixed(0)+' KB';
+function stats(){
+  $('sHbm').textContent=fmt(hbmB); $('sChip').textContent=fmt(chipB); $('sSteps').textContent=steps;
+  const tiledRef = steps*2*TILE_KB + Math.floor(steps/T)*TILE_KB;   // what tiled would have moved
+  $('sRatio').textContent = tiledRef? (hbmB/tiledRef).toFixed(1)+'×' : '1.0×';
+}
+const sleep=ms=>new Promise(r=>{const t=ms/speed; const id=setTimeout(r,t); cancelers.push(()=>{clearTimeout(id);r();});});
+let cancelers=[];
+// move a tile sprite between points; duration by bandwidth of the link
+function moveTile(label, color, from, to, ms){
+  return new Promise(res=>{
+    const el=document.createElementNS('http://www.w3.org/2000/svg','g');
+    el.innerHTML=`<rect width="${TS}" height="${TS}" rx="3" fill="${color}" stroke="${NAVY}" stroke-width="1.5" filter="url(#glow)"/><text class="svgt" x="${TS/2}" y="${TS/2+4}" text-anchor="middle" font-size="9" font-weight="700" fill="${NAVY}">${label}</text>`;
+    mv.appendChild(el);
+    const t0=performance.now(), dur=ms/speed;
+    let stop=false; cancelers.push(()=>{stop=true; el.remove(); res();});
+    (function f(now){
+      if(stop) return;
+      const u=Math.min(1,(now-t0)/dur), e=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+      el.setAttribute('transform',`translate(${from.x+(to.x-from.x)*e},${from.y+(to.y-from.y)*e})`);
+      if(u<1) requestAnimationFrame(f); else { el.remove(); res(); }
+    })(t0);
+  });
+}
+// durations per link (ms), ∝ 1/bandwidth: HBM 3.2 → 900, L2 12 → 240, SMEM 25 → 115, regs 100 → 30
+const D={hbm:900,l2:240,smem:115,reg:60,compute:320};
+function say(h){ $('msg').innerHTML=h; }
+function flashCores(n,on){ $('cores'+n).querySelectorAll('rect').forEach(r=>r.setAttribute('fill', on? '#ffd166' : ORNG)); }
+
+async function fetchTile(n, m, i, j){
+  const sm=SMS[n]; const x=sm.x;
+  const src=tilePos(m,i,j);
+  const l2={x:x+ (m==='A'?22:56), y:L2Y+6};
+  const smem={x:x+23+(m==='A'?0:34), y:SMY+195};
+  const color= m==='A'? '#ffd9c2' : '#cfe6ff';
+  const lab=`${m}${i}${j}`;
+  $('t'+m+i+j).setAttribute('stroke',AMB); $('t'+m+i+j).setAttribute('stroke-width','2.5');
+  await moveTile(lab,color,src,l2,D.hbm);   hbmB+=TILE_KB; stats();
+  await moveTile(lab,color,l2,smem,D.l2);   chipB+=TILE_KB; stats();
+  $('t'+m+i+j).setAttribute('stroke','#fff'); $('t'+m+i+j).setAttribute('stroke-width','1');
+  // leave a copy staged in shared memory
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('id',`st${n}${m}`);
+  g.innerHTML=`<rect x="${smem.x}" y="${smem.y}" width="${TS}" height="${TS}" rx="3" fill="${color}" stroke="${NAVY}"/><text class="svgt" x="${smem.x+TS/2}" y="${smem.y+TS/2+4}" text-anchor="middle" font-size="9" font-weight="700" fill="${NAVY}">${lab}</text>`;
+  mv.appendChild(g);
+}
+async function computeStep(n,k){
+  const sm=SMS[n], x=sm.x;
+  // shared memory → registers (both tiles), then cores multiply-accumulate
+  const reg={x:x+150+2, y:SMY+54};
+  await Promise.all([
+    moveTile(`A${sm.tile[0]}${k}`,'#ffd9c2',{x:x+22,y:SMY+195},reg,D.smem),
+    moveTile(`B${k}${sm.tile[1]}`,'#cfe6ff',{x:x+56,y:SMY+195},reg,D.smem)]);
+  chipB+=2*TILE_KB;
+  ['A','B'].forEach(m=>{const e=$(`st${n}${m}`); if(e) e.remove();});
+  flashCores(n,true); $('accK'+n).textContent=`k=${k}`;
+  await sleep(D.compute);
+  flashCores(n,false);
+  $('accT'+n).textContent=String(k+1); $('acc'+n).setAttribute('fill', ['#fff','#fde7d3','#f8c9a4','#f2a86e','#e8862e'][k+1]);
+  steps++; stats();
+}
+async function writeBack(n, partial){
+  const sm=SMS[n], x=sm.x, [i,j]=sm.tile;
+  const reg={x:x+152,y:SMY+54}, l2={x:x+22,y:L2Y+6}, dst=tilePos('C',i,j);
+  await moveTile(`C${i}${j}`,'#e8862e',reg,l2,D.l2); chipB+=TILE_KB;
+  await moveTile(`C${i}${j}`,'#e8862e',l2,dst,D.hbm); hbmB+=TILE_KB; stats();
+  $('tC'+i+j).setAttribute('fill', partial? '#f2a86e':'#e8862e');
+}
+async function readBack(n){
+  const sm=SMS[n], x=sm.x, [i,j]=sm.tile;
+  const reg={x:x+152,y:SMY+54}, l2={x:x+22,y:L2Y+6}, src=tilePos('C',i,j);
+  await moveTile(`C${i}${j}`,'#f2a86e',src,l2,D.hbm); hbmB+=TILE_KB;
+  await moveTile(`C${i}${j}`,'#f2a86e',l2,reg,D.l2); chipB+=TILE_KB; stats();
+}
+
+async function runSM(n){
+  const sm=SMS[n], [i,j]=sm.tile;
+  for(let k=0;k<T;k++){
+    if(cancel) return;
+    await Promise.all([fetchTile(n,'A',i,k), fetchTile(n,'B',k,j)]);
+    if(cancel) return;
+    if(mode==='naive' && k>0) await readBack(n);          // the naive kernel forgot its own partial sum
+    await computeStep(n,k);
+    if(mode==='naive' && k<T-1) await writeBack(n,true);   // ...and spills it to HBM every step
+  }
+  if(!cancel) await writeBack(n,false);
+}
+async function runAll(){
+  if(running) return; running=true; cancel=false;
+  say(mode==='tiled'
+    ? `<b>Tiled kernel.</b> Each SM streams A[i,k] and B[k,j] up the pyramid (slow HBM leg, fast on-chip legs), multiplies in the cores, and <b>keeps the running sum in registers</b> across all k. C touches HBM exactly once — at the end.`
+    : `<b>Naive kernel.</b> Same math, but the partial sum is <b>written back to HBM after every k-step and re-read for the next</b>. Watch the orange C tile shuttle up and down the slowest link — that traffic, not the FLOPs, is where the time goes.`);
+  await Promise.all(SMS.map((_,n)=>runSM(n)));
+  running=false;
+  if(!cancel){ say(`<b>Done.</b> ${mode==='tiled'?'Tiled':'Naive'}: <b>${fmt(hbmB)}</b> crossed the HBM link for 3 output tiles. ${mode==='tiled'?'Flip to naive and run again: same result, 1.7× the HBM traffic on this toy — and the gap scales with N/T on real matrices (see below).':'Flip to tiled: same result, one write per output tile.'}`); if(playing) { playing=false; $('play').textContent='▶ Play'; } }
+}
+function reset(){
+  cancel=true; cancelers.forEach(c=>c()); cancelers=[]; running=false;
+  mv.innerHTML=''; hbmB=chipB=steps=0; stats();
+  SMS.forEach((sm,n)=>{ $('accT'+n).textContent='0'; $('acc'+n).setAttribute('fill','#fff'); $('accK'+n).textContent='k=–'; flashCores(n,false); });
+  for(let i=0;i<T;i++)for(let j=0;j<T;j++){ $('tC'+i+j).setAttribute('fill','#fff'); ['A','B'].forEach(m=>{const e=$('t'+m+i+j); e.setAttribute('stroke','#fff'); e.setAttribute('stroke-width','1');}); }
+  playing=false; $('play').textContent='▶ Play';
+  say('Press <b>Play</b>. Three SMs each own one output tile of C; every tile of A and B they need must climb from HBM.');
+}
+$('play').onclick=()=>{ if(running){ reset(); return; } playing=true; $('play').textContent='■ Stop'; runAll(); };
+$('step').onclick=()=>{ if(!running){ reset(); playing=true; $('play').textContent='■ Stop'; runAll(); } };
+$('reset').onclick=reset;
+$('speed').oninput=e=>speed=+e.target.value;
+$('mTiled').onclick=()=>{ mode='tiled'; $('mTiled').classList.add('on'); $('mNaive').classList.remove('on'); reset(); modelText(); };
+$('mNaive').onclick=()=>{ mode='naive'; $('mNaive').classList.add('on'); $('mTiled').classList.remove('on'); reset(); modelText(); };
+
+// analytic model for the full 4096×4096 product, so the toy numbers scale to the real thing
+function modelText(){
+  const N=4096, Tt=128, B=2;
+  const flops=2*N**3, tComp=flops/989e12*1e3;
+  const tiledBytes=2*N**3/Tt*B + N*N*B;           // A and B streamed with reuse factor T, C written once
+  const naiveBytes=2*N**3*B + 2*N*N*(N/Tt)*B;       // no reuse + partial-sum spills each k-step
+  const tT=tiledBytes/3.2e12*1e3, tN=naiveBytes/3.2e12*1e3;
+  $('model').innerHTML=`<b>Scaled to a real 4096×4096 bf16 matmul (128×128 tiles):</b> compute needs ${flops/1e9|0} GFLOP ≈ <b>${tComp.toFixed(2)} ms</b> at 989 TFLOP/s. The tiled kernel moves ≈ ${(tiledBytes/1e9).toFixed(2)} GB over HBM ≈ <b>${tT.toFixed(2)} ms</b> — about balanced with compute (near the roofline ridge, §8.4). The naive kernel moves ≈ ${(naiveBytes/1e9).toFixed(0)} GB ≈ <b>${tN.toFixed(0)} ms</b> — ${(tN/tT).toFixed(0)}× more, memory-bound by a mile. Same FLOPs; the only difference is how many times each byte crosses the bottom of the pyramid.`;
+}
+modelText(); stats();
+})();
+</script>
+</body>
+</html>
